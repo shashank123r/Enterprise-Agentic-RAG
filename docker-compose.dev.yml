@@ -1,0 +1,26 @@
+# ──────────────────────────────────────────────
+# Development Docker Compose Overrides
+# ──────────────────────────────────────────────
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rag-api-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - POSTGRES_ECHO=true
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

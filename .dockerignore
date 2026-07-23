@@ -1,0 +1,68 @@
+# ── Virtual environments ─────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Python cache & build artifacts ──────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# ── Environment / secrets ────────────────────
+# .env is intentionally NOT excluded — docker compose reads it via env_file.
+.env.local
+.env.*.local
+
+# ── IDE & editor ─────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Git ─────────────────────────────────────
+.git/
+.gitignore
+.github/
+
+# ── Testing & coverage ───────────────────────
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+coverage.xml
+tests/
+
+# ── Tooling caches ───────────────────────────
+.mypy_cache/
+.ruff_cache/
+.black_cache/
+.pre-commit-config.yaml
+
+# ── Logs & runtime data ──────────────────────
+logs/
+*.log
+uploads/*
+data/
+
+# ── Docs & scripts (not needed in image) ─────
+README.md
+*.md
+scripts/
+Makefile
+run.sh
+run.ps1
+stop.sh
+stop.ps1
+
+# ── Dev compose overrides ────────────────────
+docker-compose.dev.yml
+Dockerfile.dev

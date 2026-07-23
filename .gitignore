@@ -1,0 +1,76 @@
+# ── Python ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+
+# ── Virtual environments ────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment ────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── IDE ─────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Testing & Coverage ──────────────────────
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+coverage.xml
+
+# ── Tooling ─────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+.black_cache/
+
+# ── Docker ─────────────────────────────────
+.docker/
+docker-compose.override.yml
+
+# ── Logs ─────────────────────────────────────
+logs/
+*.log
+
+# ── Uploads ────────────────────────────────
+uploads/*
+
+# ── Data ─────────────────────────────────────
+data/
+!data/.gitkeep
+
+# ── Misc ────────────────────────────────────
+*.pid
+*.seed
+*.cert
+*.key
+# Runtime files
+uvicorn_stderr.txt
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Generated test files (optional)
+test_doc.pdf
+
+uploads/*
+!uploads/.gitkeep
+uvicorn_stderr.txt
+test_doc.pdf

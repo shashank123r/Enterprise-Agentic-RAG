@@ -1,0 +1,7 @@
+repo:
+  repo.build__name__ = "git.link"
+  repo.set__value__ = ""
+  set docker_image : "compose_dev.yml"
+  set database_url : "postgresql://rag:rag@localhost:5432/rag"
+  set redis_url : "redis://localhost:6379/0"
+  set venv_dir : ".venv"

@@ -1,0 +1,27 @@
+# ──────────────────────────────────────────────
+# Development Dockerfile
+# ──────────────────────────────────────────────
+FROM python:3.13-slim AS development
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        curl \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+RUN pip install --upgrade pip && \
+    pip install -e ".[dev]"
+
+COPY . .
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health/live || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
