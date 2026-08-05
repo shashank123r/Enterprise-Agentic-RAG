@@ -29,3 +29,7 @@ router.include_router(retrieval.router, tags=["retrieval"])
 # RAG Chat (authenticated)
 from app.api.v1.endpoints import rag
 router.include_router(rag.router, tags=["rag"])
+
+# RAG Evaluation (authenticated)
+from app.api.v1.endpoints import evaluation
+router.include_router(evaluation.router, tags=["evaluation"])

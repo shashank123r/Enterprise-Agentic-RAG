@@ -46,29 +46,39 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if count == 1:
                 await redis_manager.expire(key, window + 1)
 
+            # Check BEFORE processing the request to avoid wasted compute
+            if count > max_requests:
+                from fastapi.responses import ORJSONResponse
+                from starlette.status import HTTP_429_TOO_MANY_REQUESTS
+
+                remaining_secs = window - (now % window)
+                return ORJSONResponse(
+                    status_code=HTTP_429_TOO_MANY_REQUESTS,
+                    content={
+                        "error": {
+                            "code": "rate_limit_exceeded",
+                            "message": "Rate limit exceeded. Try again shortly.",
+                        }
+                    },
+                    headers={
+                        "X-RateLimit-Limit": str(max_requests),
+                        "X-RateLimit-Remaining": "0",
+                        "X-RateLimit-Window": str(window),
+                        "Retry-After": str(remaining_secs),
+                    },
+                )
+
             response = await call_next(request)
 
-            # Add rate limit headers
+            # Add rate limit headers to successful responses
             remaining = max(0, max_requests - count)
             response.headers["X-RateLimit-Limit"] = str(max_requests)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
             response.headers["X-RateLimit-Window"] = str(window)
 
-            # If over limit, return 429
-            if count > max_requests:
-                from app.core.exceptions import RateLimitError
-
-                raise RateLimitError(
-                    message="Rate limit exceeded. Try again shortly.",
-                    code="rate_limit_exceeded",
-                )
-
             return response
 
         except Exception as e:
-            if hasattr(e, "status_code") and getattr(e, "status_code") == 429:
-                raise
-
             # If Redis is down, allow the request through (fail open)
             logger.warning("Rate limit check failed, allowing request", exc_info=e)
             return await call_next(request)

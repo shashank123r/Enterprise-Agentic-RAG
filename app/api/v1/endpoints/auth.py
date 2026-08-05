@@ -1,10 +1,16 @@
 """Authentication endpoints — login, register, token refresh, logout."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.cache.redis import redis_manager
+from app.core.config import settings
+from app.core.constants import REDIS_SESSION_PREFIX
 from app.core.dependencies import get_current_user_id, get_db
 from app.core.exceptions import AuthenticationError
+from app.core.logging import get_logger
+from app.core.security import decode_token
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse as LoginResponseSchema,
@@ -15,6 +21,9 @@ from app.schemas.auth import (
 from app.schemas.common import MessageResponse
 from app.schemas.user import UserResponse
 from app.services.auth_service import AuthService
+
+logger = get_logger(__name__)
+_bearer = HTTPBearer(auto_error=False)
 
 router = APIRouter()
 
@@ -73,14 +82,28 @@ async def refresh(
 @router.post(
     "/logout",
     summary="User logout",
-    description="Invalidate the current refresh token.",
+    description="Blacklist the current access token so it cannot be reused.",
     response_model=MessageResponse,
 )
 async def logout(
     user_id: str = Depends(get_current_user_id),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> MessageResponse:
-    """Log out the current user."""
-    # TODO: Implement token blacklisting in Redis
+    """Log out the current user by blacklisting their token in Redis."""
+    if credentials:
+        try:
+            from jose import JWTError
+            payload = decode_token(credentials.credentials)
+            jti = payload.get("jti")
+            exp = payload.get("exp", 0)
+            if jti and exp:
+                import time
+                ttl = max(1, int(exp - time.time()))
+                blacklist_key = f"{REDIS_SESSION_PREFIX}blacklist:{jti}"
+                await redis_manager.set(blacklist_key, "1", ttl=ttl)
+        except Exception as e:
+            logger.warning("Token blacklisting failed (non-fatal)", error=str(e))
+
     return MessageResponse(
         message="Logged out successfully",
         code="logout_success",

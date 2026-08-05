@@ -12,7 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import Permission, Role
+from app.core.constants import Permission, Role, ROLE_PERMISSIONS
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.security import decode_token
 from app.db.session import async_session_factory
@@ -79,7 +79,8 @@ async def _extract_token_payload(
     """Extract and validate the JWT payload once, returning claims dict.
 
     This is the single point of token extraction — used by all auth
-    dependencies to avoid redundant JWT decoding.
+    dependencies to avoid redundant JWT decoding. Also checks the
+    Redis blacklist to reject logged-out tokens.
     """
     if credentials is None:
         raise AuthenticationError(
@@ -90,6 +91,24 @@ async def _extract_token_payload(
     try:
         payload = decode_token(credentials.credentials)
 
+        # Check token blacklist (for logged-out tokens)
+        jti = payload.get("jti")
+        if jti:
+            from app.cache.redis import redis_manager
+            from app.core.constants import REDIS_SESSION_PREFIX
+            blacklist_key = f"{REDIS_SESSION_PREFIX}blacklist:{jti}"
+            try:
+                is_blacklisted = await redis_manager.get(blacklist_key)
+                if is_blacklisted:
+                    raise AuthenticationError(
+                        message="Token has been revoked",
+                        code="token_revoked",
+                    )
+            except AuthenticationError:
+                raise
+            except Exception:
+                pass  # Redis down — fail open for availability
+
         # Propagate request_id to structlog context for traceability
         structlog.contextvars.bind_contextvars(
             user_id=payload.get("sub", "unknown"),
@@ -97,6 +116,8 @@ async def _extract_token_payload(
         )
 
         return payload
+    except AuthenticationError:
+        raise
     except JWTError:
         raise AuthenticationError(
             message="Invalid or expired token",

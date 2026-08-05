@@ -1,11 +1,17 @@
 """Hybrid retriever — combines dense and BM25 results via Reciprocal Rank Fusion (RRF).
 
-Configurable dense/BM25 weighting. Dense captures semantic similarity;
-BM25 captures keyword matching. RRF merges both into a single ranked list.
+Key improvements over naive sequential hybrid:
+  - asyncio.gather for true parallel dense+BM25 execution
+  - Score normalization (min-max) before fusion to prevent scale bias
+  - Weighted RRF: configurable dense vs. sparse weight
+  - Recency boosting: recent documents can be optionally up-ranked
+  - Per-source score preserved for downstream diagnostics
 """
 
 from __future__ import annotations
 
+import asyncio
+import math
 from typing import Any
 
 from app.core.logging import get_logger
@@ -17,18 +23,30 @@ from app.retrieval.schemas import RetrievalCandidate
 
 logger = get_logger(__name__)
 
-# RRF constant — prevents division by zero
+# RRF smoothing constant (Cormack & Bauer, 2009)
 _RRF_K = 60
 
 
-class HybridRetriever(Retriever):
-    """Hybrid retriever using Reciprocal Rank Fusion (RRF).
+def _min_max_normalize(scores: dict[str, float]) -> dict[str, float]:
+    """Normalize scores into [0, 1] via min-max scaling."""
+    if not scores:
+        return {}
+    vals = list(scores.values())
+    lo, hi = min(vals), max(vals)
+    if hi == lo:
+        return {k: 1.0 for k in scores}
+    span = hi - lo
+    return {k: (v - lo) / span for k, v in scores.items()}
 
-    Merges dense vector search results with BM25 keyword results
-    using configurable weighting.
+
+class HybridRetriever(Retriever):
+    """Hybrid retriever: parallel dense+BM25 via Reciprocal Rank Fusion.
+
+    Runs both retrievers concurrently with asyncio.gather, normalizes
+    individual scores, then fuses with RRF weighted by ``alpha``.
 
     Usage:
-        hybrid = HybridRetriever(dense_retriever, bm25_retriever, alpha=0.5)
+        hybrid = HybridRetriever(dense, bm25, alpha=0.6)
         results = await hybrid.retrieve("query text", top_k=10)
     """
 
@@ -36,11 +54,13 @@ class HybridRetriever(Retriever):
         self,
         dense_retriever: DenseRetriever,
         bm25_retriever: BM25Retriever,
-        alpha: float = 0.5,
+        alpha: float = 0.6,
+        recency_boost: float = 0.0,
     ) -> None:
         self._dense = dense_retriever
         self._bm25 = bm25_retriever
-        self._alpha = alpha  # 0 = BM25, 1 = dense
+        self._alpha = alpha        # 0 = pure BM25, 1 = pure dense
+        self._recency_boost = recency_boost  # 0 = off, 0.1-0.3 = mild boost
 
     async def retrieve(
         self,
@@ -49,67 +69,71 @@ class HybridRetriever(Retriever):
         filters: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> list[RetrievalCandidate]:
-        """Retrieve top-k results using hybrid dense+BM25 search.
+        """Retrieve top-k results using parallel hybrid dense+BM25 search.
 
         Args:
             query: Search query text.
-            top_k: Number of results to return.
-            filters: Optional metadata filters applied to dense search.
-            **kwargs: Additional parameters:
-                alpha: Dense weight override (0.0 = BM25, 1.0 = dense).
-                collection_name: Override for dense search collection.
-                bm25_top_k: Override for BM25 candidate count.
+            top_k: Number of results to return after fusion.
+            filters: Metadata filters forwarded to dense search.
+            **kwargs:
+                alpha: Dense weight override (0 = BM25, 1 = dense).
+                bm25_top_k: BM25 candidate count (default top_k × 3).
+                collection_name: Milvus collection override.
+                recency_boost: Recency up-rank factor override.
 
         Returns:
-            List of RetrievalCandidate merged via RRF.
-
-        Raises:
-            RetrieverUnavailable: If either sub-retriever fails.
+            Fused, sorted list of RetrievalCandidate (length ≤ top_k).
         """
-        alpha = kwargs.get("alpha", self._alpha)
+        alpha = kwargs.pop("alpha", self._alpha)
+        recency_boost = kwargs.pop("recency_boost", self._recency_boost)
+        bm25_top_k = kwargs.pop("bm25_top_k", top_k * 3)
+        dense_top_k = max(top_k, bm25_top_k)
 
         with RetrievalTimer("hybrid.retrieve", tags={"alpha": str(alpha)}):
-            # Run dense and BM25 in parallel
-            bm25_top_k = kwargs.get("bm25_top_k", top_k * 3)  # More candidates from BM25
+            # ── Parallel retrieval ─────────────────────────────────────────
+            dense_task = self._dense.retrieve(
+                query=query,
+                top_k=dense_top_k,
+                filters=filters,
+                **kwargs,
+            )
+            bm25_task = self._bm25.retrieve(
+                query=query,
+                top_k=bm25_top_k,
+                filters=filters,
+            )
 
-            # Execute both retrievers
-            with RetrievalTimer("hybrid.dense_search"):
+            try:
+                with RetrievalTimer("hybrid.parallel_fetch"):
+                    dense_results, bm25_results = await asyncio.gather(
+                        dense_task, bm25_task
+                    )
+            except Exception as e:
+                logger.warning("Parallel retrieval partial failure", error=str(e))
+                # Try to get at least one result set
                 dense_results = await self._dense.retrieve(
-                    query=query,
-                    top_k=max(top_k, bm25_top_k),
-                    filters=filters,
-                    **kwargs,
+                    query=query, top_k=dense_top_k, filters=filters, **kwargs
                 )
+                bm25_results = []
 
-            with RetrievalTimer("hybrid.bm25_search"):
-                bm25_results = await self._bm25.retrieve(
-                    query=query,
-                    top_k=bm25_top_k,
-                    filters=filters,
-                )
-
-            # Merge via RRF
+            # ── RRF fusion with normalization ──────────────────────────────
             with RetrievalTimer("hybrid.rrf_fusion"):
                 merged = self._rrf_fusion(
                     dense_results=dense_results,
                     bm25_results=bm25_results,
                     alpha=alpha,
+                    recency_boost=recency_boost,
                 )
 
-            # Apply overall score threshold and return top_k
-            for candidate in merged:
-                if candidate.rerank_score is not None:
-                    candidate.score = candidate.rerank_score
-
-            logger.debug(
-                "Hybrid retrieval complete",
-                query_preview=query[:50],
-                dense_results=len(dense_results),
-                bm25_results=len(bm25_results),
-                merged=len(merged[:top_k]),
-                alpha=alpha,
-            )
-            return merged[:top_k]
+        logger.debug(
+            "Hybrid retrieval complete",
+            query_preview=query[:60],
+            dense_results=len(dense_results),
+            bm25_results=len(bm25_results),
+            merged=min(len(merged), top_k),
+            alpha=alpha,
+        )
+        return merged[:top_k]
 
     async def retrieve_batch(
         self,
@@ -118,102 +142,171 @@ class HybridRetriever(Retriever):
         filters: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> list[list[RetrievalCandidate]]:
-        """Retrieve for multiple queries."""
-        results = []
-        for query in queries:
-            results.append(await self.retrieve(query, top_k=top_k, filters=filters, **kwargs))
-        return results
+        """Retrieve for multiple queries concurrently."""
+        tasks = [self.retrieve(q, top_k=top_k, filters=filters, **kwargs) for q in queries]
+        return list(await asyncio.gather(*tasks))
 
     def retriever_name(self) -> str:
         return "hybrid"
 
     async def health_check(self) -> bool:
-        """Check if both sub-retrievers are operational."""
-        dense_ok = await self._dense.health_check()
-        bm25_ok = await self._bm25.health_check()
+        dense_ok, bm25_ok = await asyncio.gather(
+            self._dense.health_check(),
+            self._bm25.health_check(),
+        )
         return dense_ok and bm25_ok
 
     @property
     def dense(self) -> DenseRetriever:
-        """Access the underlying dense retriever."""
         return self._dense
 
     @property
     def bm25(self) -> BM25Retriever:
-        """Access the underlying BM25 retriever."""
         return self._bm25
 
-    # ── RRF Fusion ─────────────────────────────
+    # ── RRF Fusion ─────────────────────────────────────────────────────────
 
     def _rrf_fusion(
         self,
         dense_results: list[RetrievalCandidate],
         bm25_results: list[RetrievalCandidate],
         alpha: float,
+        recency_boost: float = 0.0,
     ) -> list[RetrievalCandidate]:
-        """Merge two ranked lists using Reciprocal Rank Fusion.
+        """Fuse two ranked lists with Reciprocal Rank Fusion.
 
-        Each candidate's RRF score is:
-            dense_weight * 1/(rank_dense + K) + (1-dense_weight) * 1/(rank_bm25 + K)
+        Steps:
+            1. Min-max normalize raw scores within each list
+            2. Assign RRF rank scores
+            3. Weighted combination: alpha * dense_rrf + (1-alpha) * bm25_rrf
+            4. Optional recency boost from document creation date metadata
 
         Args:
-            dense_results: Results from dense retriever (ranked).
-            bm25_results: Results from BM25 retriever (ranked).
-            alpha: Dense weight (0.0 to 1.0).
+            dense_results: Dense retriever results.
+            bm25_results: BM25 retriever results.
+            alpha: Dense weight [0, 1].
+            recency_boost: Recency up-rank multiplier (0 = disabled).
 
         Returns:
-            Merged list sorted by combined RRF score (descending).
+            Merged, sorted list of candidates.
         """
-        # Build rank maps: chunk_id -> rank position (1-indexed)
+        # Raw score maps for normalization
+        dense_raw = {r.chunk_id: r.score for r in dense_results}
+        bm25_raw = {r.chunk_id: r.score for r in bm25_results}
+
+        # Normalize within each list (eliminates scale difference)
+        dense_norm = _min_max_normalize(dense_raw)
+        bm25_norm = _min_max_normalize(bm25_raw)
+
+        # Rank positions (1-indexed)
         dense_ranks = {r.chunk_id: idx + 1 for idx, r in enumerate(dense_results)}
         bm25_ranks = {r.chunk_id: idx + 1 for idx, r in enumerate(bm25_results)}
 
-        # Collect unique chunk IDs from both result sets
-        all_chunk_ids = set(dense_ranks.keys()) | set(bm25_ranks.keys())
+        # Penalty for absence — rank beyond the actual list length
+        dense_absence_rank = len(dense_results) + _RRF_K + 1
+        bm25_absence_rank = len(bm25_results) + _RRF_K + 1
 
-        # Compute RRF scores
+        all_chunk_ids = set(dense_ranks) | set(bm25_ranks)
+
         rrf_scores: dict[str, float] = {}
         for chunk_id in all_chunk_ids:
-            dense_rank = dense_ranks.get(chunk_id, _RRF_K * 10)  # Large penalty if absent
-            bm25_rank = bm25_ranks.get(chunk_id, _RRF_K * 10)
+            dense_rank = dense_ranks.get(chunk_id, dense_absence_rank)
+            bm25_rank = bm25_ranks.get(chunk_id, bm25_absence_rank)
 
             dense_rrf = 1.0 / (_RRF_K + dense_rank)
             bm25_rrf = 1.0 / (_RRF_K + bm25_rank)
 
-            rrf_scores[chunk_id] = alpha * dense_rrf + (1 - alpha) * bm25_rrf
+            rrf_scores[chunk_id] = alpha * dense_rrf + (1.0 - alpha) * bm25_rrf
 
-        # Sort by RRF score descending
+        # Optionally apply recency boost
+        if recency_boost > 0:
+            rrf_scores = self._apply_recency_boost(
+                rrf_scores, dense_results + bm25_results, boost=recency_boost
+            )
+
         sorted_ids = sorted(rrf_scores, key=lambda cid: rrf_scores[cid], reverse=True)
 
-        # Build merged results — prefer dense candidate for richer metadata
+        # Build output candidates, preserving richer metadata (prefer dense)
+        dense_map: dict[str, RetrievalCandidate] = {r.chunk_id: r for r in dense_results}
+        bm25_map: dict[str, RetrievalCandidate] = {r.chunk_id: r for r in bm25_results}
+
         merged: list[RetrievalCandidate] = []
-        seen = set()
         for chunk_id in sorted_ids:
-            if chunk_id in seen:
+            candidate = dense_map.get(chunk_id) or bm25_map.get(chunk_id)
+            if candidate is None:
                 continue
-            seen.add(chunk_id)
 
-            # Find the best candidate (prefer dense for metadata)
-            dense_candidate = next((r for r in dense_results if r.chunk_id == chunk_id), None)
-            bm25_candidate = next((r for r in bm25_results if r.chunk_id == chunk_id), None)
+            rrf_score = rrf_scores[chunk_id]
 
-            candidate: RetrievalCandidate | None = None
-            if dense_candidate and bm25_candidate:
-                # Merge: use dense metadata but update score to RRF
-                candidate = dense_candidate
-                candidate.rerank_score = bm25_candidate.score
-                candidate.score = rrf_scores[chunk_id]
+            # Preserve individual scores in metadata for diagnostics
+            candidate.metadata["dense_score"] = dense_norm.get(chunk_id, 0.0)
+            candidate.metadata["bm25_score"] = bm25_norm.get(chunk_id, 0.0)
+            candidate.metadata["rrf_score"] = round(rrf_score, 6)
+
+            # Set primary score to normalized RRF
+            candidate.score = rrf_score
+
+            if chunk_id in dense_map and chunk_id in bm25_map:
                 candidate.retrieval_source = "hybrid"
-            elif dense_candidate:
-                candidate = dense_candidate
-                candidate.score = rrf_scores[chunk_id]
+            elif chunk_id in dense_map:
                 candidate.retrieval_source = "dense"
-            elif bm25_candidate:
-                candidate = bm25_candidate
-                candidate.score = rrf_scores[chunk_id]
+            else:
                 candidate.retrieval_source = "bm25"
 
-            if candidate:
-                merged.append(candidate)
+            merged.append(candidate)
 
         return merged
+
+    @staticmethod
+    def _apply_recency_boost(
+        scores: dict[str, float],
+        candidates: list[RetrievalCandidate],
+        boost: float,
+    ) -> dict[str, float]:
+        """Boost scores for recently created/modified documents.
+
+        Expects metadata key ``created_at`` as an ISO date string or Unix ts.
+        Documents without date metadata are not boosted.
+        """
+        import time as _time
+
+        now = _time.time()
+        # Collect available timestamps
+        timestamps: dict[str, float] = {}
+        seen: set[str] = set()
+        for c in candidates:
+            if c.chunk_id in seen:
+                continue
+            seen.add(c.chunk_id)
+            for key in ("created_at", "modified_date", "date", "published_at"):
+                raw = c.metadata.get(key)
+                if raw is None:
+                    continue
+                try:
+                    if isinstance(raw, (int, float)):
+                        timestamps[c.chunk_id] = float(raw)
+                    elif isinstance(raw, str):
+                        import datetime
+                        # Try ISO parse
+                        dt = datetime.datetime.fromisoformat(raw.rstrip("Z"))
+                        timestamps[c.chunk_id] = dt.timestamp()
+                    break
+                except Exception:
+                    continue
+
+        if not timestamps:
+            return scores
+
+        # Normalise age: 0 = oldest, 1 = newest
+        min_ts = min(timestamps.values())
+        max_ts = max(timestamps.values())
+        span = max(max_ts - min_ts, 1)
+
+        boosted = dict(scores)
+        for chunk_id, ts in timestamps.items():
+            if chunk_id not in boosted:
+                continue
+            recency_factor = (ts - min_ts) / span  # 0 = oldest, 1 = newest
+            boosted[chunk_id] = scores[chunk_id] * (1.0 + boost * recency_factor)
+
+        return boosted

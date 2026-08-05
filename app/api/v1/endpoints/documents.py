@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.status import HTTP_413_CONTENT_TOO_LARGE
+from starlette.status import HTTP_413_CONTENT_TOO_LARGE, HTTP_413_REQUEST_ENTITY_TOO_LARGE
 
 from app.core.config import settings
 from app.core.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, ALLOWED_DOCUMENT_TYPES
@@ -45,6 +45,26 @@ from app.storage import StorageProvider
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+# Shared ARQ pool — created once per process, reused across requests
+_arq_pool = None
+
+
+async def _get_arq_pool():
+    """Return the process-level ARQ pool, creating it on first call."""
+    global _arq_pool
+    if _arq_pool is None:
+        try:
+            from arq import create_pool
+            _arq_pool = await create_pool(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                password=settings.REDIS_PASSWORD or None,
+            )
+        except Exception as e:
+            logger.warning("Failed to create ARQ pool", error=str(e))
+            return None
+    return _arq_pool
 
 
 @router.post(
@@ -136,21 +156,17 @@ async def upload_document(
     permanent_path = await storage.generate_storage_path("documents", document.id)
     await storage.move(temp_path, permanent_path)
 
-    # Enqueue background job via ARQ
+    # Enqueue background job via shared ARQ pool
     try:
-        from arq import create_pool
-        redis_pool = await create_pool(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD or None,
-        )
-        await redis_pool.enqueue_job(
-            "process_document",
-            document_id=document.id,
-            file_path=permanent_path,
-            mime_type=mime_type,
-            user_id=user_id,
-        )
+        arq_pool = await _get_arq_pool()
+        if arq_pool:
+            await arq_pool.enqueue_job(
+                "process_document",
+                document_id=document.id,
+                file_path=permanent_path,
+                mime_type=mime_type,
+                user_id=user_id,
+            )
     except Exception as e:
         logger.warning("Failed to enqueue ingestion job", error=str(e))
 
@@ -448,22 +464,18 @@ async def retry_ingestion(
         current_stage="queued",
     )
 
-    # Enqueue via ARQ
+    # Enqueue via shared ARQ pool
     file_path = await storage.generate_storage_path("documents", document_id)
     try:
-        from arq import create_pool
-        redis_pool = await create_pool(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD or None,
-        )
-        await redis_pool.enqueue_job(
-            "process_document",
-            document_id=document_id,
-            file_path=file_path,
-            mime_type=doc.mime_type,
-            user_id=_user_id,
-        )
+        arq_pool = await _get_arq_pool()
+        if arq_pool:
+            await arq_pool.enqueue_job(
+                "process_document",
+                document_id=document_id,
+                file_path=file_path,
+                mime_type=doc.mime_type,
+                user_id=_user_id,
+            )
     except Exception as e:
         logger.warning("Failed to enqueue retry job", error=str(e))
 

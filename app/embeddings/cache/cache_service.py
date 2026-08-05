@@ -168,7 +168,9 @@ class EmbeddingCacheService:
         model: str,
         dimension: int,
     ) -> dict[int, list[float]]:
-        """Get cached embeddings for a batch of checksums.
+        """Get cached embeddings for a batch of checksums via Redis MGET.
+
+        Uses a single pipelined MGET call rather than N sequential GETs.
 
         Args:
             checksums: List of content checksums.
@@ -178,14 +180,29 @@ class EmbeddingCacheService:
         Returns:
             Dict mapping index to cached vector (only hits included).
         """
-        if not self._enabled:
+        if not self._enabled or not checksums:
             return {}
 
+        keys = [self._make_key(cksum, model, dimension) for cksum in checksums]
         results: dict[int, list[float]] = {}
-        for idx, cksum in enumerate(checksums):
-            vector = await self.get(cksum, model, dimension)
-            if vector is not None:
-                results[idx] = vector
+
+        try:
+            raw_values = await redis_manager.client.mget(*keys)
+            for idx, raw in enumerate(raw_values):
+                if raw is None:
+                    continue
+                try:
+                    vector = json.loads(raw)
+                    if isinstance(vector, list) and vector:
+                        results[idx] = [float(v) for v in vector]
+                        # Refresh TTL for cache hits (fire-and-forget)
+                        await redis_manager.expire(keys[idx], self._ttl)
+                except (json.JSONDecodeError, TypeError, ValueError) as e:
+                    logger.warning("Corrupt batch cache entry", key=keys[idx], error=str(e))
+                    await redis_manager.delete(keys[idx])
+        except Exception as e:
+            logger.warning("Batch cache read error (non-fatal)", error=str(e))
+
         return results
 
     async def health_check(self) -> bool:

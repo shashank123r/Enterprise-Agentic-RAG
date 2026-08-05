@@ -41,6 +41,7 @@ dependencies = [
     "markdown>=3.7.0",
     "blake3>=1.0.0",
     "pymilvus>=2.5.0",
+    "tiktoken>=0.7.0",
 ]
 
 [project.optional-dependencies]
@@ -62,6 +63,8 @@ dev = [
     "types-python-jose>=3.3.4",
     "types-redis>=4.6.0",
     "types-python-dateutil>=2.9.0",
+    "bandit[toml]>=1.8.0",
+    "pip-audit>=2.7.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -110,6 +113,7 @@ ignore = [
     "PLR0913", # Too many arguments
     "PLR2004", # Magic value comparison
     "E501",    # Line length (black handles this)
+    "SLF001",  # Private member access — evaluation module uses grounding internals
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -148,6 +152,15 @@ filterwarnings = [
     'ignore::DeprecationWarning:alembic.*',
     'ignore::DeprecationWarning:pkg_resources',
 ]
+
+[tool.bandit]
+targets = ["app"]
+skips = [
+    "B101",  # assert_used — fine in tests
+    "B603",  # subprocess_without_shell_equals_true — we don't use subprocess
+    "B404",  # import_subprocess — not used
+]
+exclude_dirs = ["tests", "alembic", ".venv"]
 
 [tool.coverage.run]
 source = ["app"]

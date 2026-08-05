@@ -50,8 +50,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
+        <BrowserRouter>
+          <Routes>
           {/* Public routes */}
           <Route
             path="/login"
@@ -151,8 +151,8 @@ export default function App() {
               </LazyPage>
             }
           />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
       </ErrorBoundary>
     </QueryClientProvider>
   );

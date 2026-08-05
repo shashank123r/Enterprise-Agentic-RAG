@@ -41,6 +41,9 @@ RUN addgroup --system --gid 1001 rag && \
         libpq-dev \
         libmagic1 \
         curl \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/dist/*.whl .

@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Send, Sparkles, BookOpen, Copy, Check, Loader2, AlertCircle } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { Send, Sparkles, BookOpen, Copy, Check, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { Skeleton } from "../components/ui/skeleton";
 import { useLayoutStore } from "../store";
 import { ragService } from "../services/rag.service";
 import type { RAGRequest, CitationInfo, RAGChunk } from "../types";
@@ -61,6 +59,8 @@ export function ChatPage() {
     setIsStreaming(true);
 
     try {
+      // Only include completed messages (exclude the in-progress assistant placeholder)
+      const completedHistory = messages.filter((m) => m.content.length > 0);
       const request: RAGRequest = {
         question: userMessage.content,
         collection_name: "documents",
@@ -72,7 +72,7 @@ export function ChatPage() {
         max_response_tokens: 1024,
         temperature: 0.1,
         stream: true,
-        conversation_history: messages.slice(-6).map((m) => ({
+        conversation_history: completedHistory.slice(-6).map((m) => ({
           role: m.role,
           content: m.content,
         })),
@@ -275,7 +275,8 @@ export function ChatPage() {
                         <button
                           onClick={() => handleCopy(msg.id, msg.content)}
                           className="p-1 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
-                          title="Copy"
+                          title="Copy response"
+                          aria-label="Copy response to clipboard"
                         >
                           {copiedId === msg.id ? (
                             <Check className="size-3 text-green-500" />

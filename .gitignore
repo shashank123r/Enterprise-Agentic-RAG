@@ -60,17 +60,23 @@ data/
 *.seed
 *.cert
 *.key
-# Runtime files
+# Windows null device artifacts
+nul
+frontend/nul
+# Runtime / temp files
 uvicorn_stderr.txt
+vite.log
+frontend/vite.log
+frontend/frontend-vite.log
+# Generated test files
+test_doc.pdf
+create_test_pdf.py
+run_ingestion.py
+verify_pipeline.py
+
+uploads/*
+!uploads/.gitkeep
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
-
-# Generated test files (optional)
-test_doc.pdf
-
-uploads/*
-!uploads/.gitkeep
-uvicorn_stderr.txt
-test_doc.pdf

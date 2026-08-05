@@ -2,8 +2,6 @@
 # Enterprise RAG Platform — Docker Compose
 # ──────────────────────────────────────────────
 
-version: "3.9"
-
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -40,6 +38,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 512m
     logging: *default-logging
     networks:
       - rag-network
@@ -178,8 +182,8 @@ services:
       - "9000:9000"
       - "9090:9090"
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9090"

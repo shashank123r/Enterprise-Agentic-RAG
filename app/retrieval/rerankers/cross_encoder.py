@@ -166,11 +166,13 @@ class CrossEncoderReranker(Reranker):
         top_k: int | None = None,
         **kwargs: Any,
     ) -> list[list[RetrievalCandidate]]:
-        """Rerank multiple query-candidate pairs."""
-        results = []
-        for query, candidates in zip(queries, candidates_batch):
-            results.append(await self.rerank(query, candidates, top_k=top_k, **kwargs))
-        return results
+        """Rerank multiple query-candidate pairs concurrently."""
+        import asyncio
+        tasks = [
+            self.rerank(query, candidates, top_k=top_k, **kwargs)
+            for query, candidates in zip(queries, candidates_batch)
+        ]
+        return list(await asyncio.gather(*tasks))
 
     def reranker_name(self) -> str:
         return "cross_encoder"

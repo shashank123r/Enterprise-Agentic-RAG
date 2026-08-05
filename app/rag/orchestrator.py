@@ -263,6 +263,116 @@ class RAGOrchestrator:
             total_tokens=prompt_tokens + completion_tokens,
         )
 
+    async def answer_stream(
+        self,
+        question: str,
+        collection_name: str = "documents",
+        top_k: int = 10,
+        retrieval_method: str = "hybrid",
+        rerank: bool = True,
+        query_rewrite: bool = True,
+        filters: dict[str, Any] | None = None,
+        max_context_tokens: int | None = 4096,
+        max_response_tokens: int | None = 1024,
+        temperature: float | None = 0.1,
+        conversation_history: list[dict[str, str]] | None = None,
+    ):
+        """Stream the RAG pipeline, yielding SSE-ready dicts.
+
+        Yields dicts with ``type`` field:
+        - ``{"type": "status", "message": "..."}`` — pipeline stage indicators
+        - ``{"type": "token", "content": "..."}`` — LLM token chunks
+        - ``{"type": "metadata", ...}`` — final citations / grounding info
+        - ``{"type": "error", "message": "..."}`` — fatal errors
+
+        Args match :meth:`answer` exactly (minus ``stream`` flag).
+        """
+        try:
+            yield {"type": "status", "message": "Retrieving context..."}
+
+            retrieval_result = await self._retrieval.search(
+                query=question,
+                collection_name=collection_name,
+                method=retrieval_method,
+                top_k=top_k,
+                filters=filters or {},
+                rerank=rerank,
+                query_rewrite=query_rewrite,
+                max_context_tokens=max_context_tokens,
+            )
+            chunks = retrieval_result.chunks
+
+            budget = TokenBudget(
+                model=self._llm_model,
+                max_context_tokens=max_context_tokens,
+                max_response_tokens=max_response_tokens,
+            )
+            context = await self._context_manager.build_context(chunks, budget)
+            messages = await self._prompt_builder.build(
+                context=context,
+                question=question,
+                budget=budget,
+                history=conversation_history,
+            )
+
+            yield {"type": "status", "message": "Generating answer..."}
+
+            full_text = ""
+            llm_payload = {
+                "model": self._llm_model,
+                "messages": messages,
+                "temperature": temperature or 0.1,
+                "max_tokens": max_response_tokens or 1024,
+                "stream": True,
+            }
+
+            import json as _json
+            async with self.client.stream(
+                "POST", self._llm_api_url, json=llm_payload
+            ) as response:
+                if response.status_code != 200:
+                    error_bytes = await response.aread()
+                    yield {"type": "error", "message": f"LLM error: HTTP {response.status_code}"}
+                    return
+
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data_str = line[6:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = _json.loads(data_str)
+                        delta = chunk.get("choices", [{}])[0].get("delta", {})
+                        content = delta.get("content", "")
+                        if content:
+                            full_text += content
+                            yield {"type": "token", "content": content}
+                    except _json.JSONDecodeError:
+                        continue
+
+            grounding = await self._grounding_validator.validate(
+                answer=full_text,
+                chunks=chunks,
+                question=question,
+            )
+            citation_indices = self._grounding_validator._extract_citations(full_text)
+            citations = self._citation_merger.build_citations(chunks, citation_indices)
+
+            yield {
+                "type": "metadata",
+                "citations": [c.model_dump() for c in citations],
+                "grounding_valid": grounding["valid"],
+                "grounding_issues": grounding["issues"],
+                "citation_count": len(citations),
+                "chunks_count": len(chunks),
+                "total_duration_ms": 0,
+            }
+
+        except Exception as e:
+            logger.exception("RAG stream failed", error=str(e))
+            yield {"type": "error", "message": str(e)}
+
     # ── LLM calls ──────────────────────────────
 
     async def _call_llm(

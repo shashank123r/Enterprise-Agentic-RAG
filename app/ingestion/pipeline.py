@@ -70,11 +70,12 @@ class IngestionPipeline:
             extractor_cls = extractor_registry.get_extractor(mime_type)
             if extractor_cls is None:
                 raise ValueError(f"No extractor found for MIME type: {mime_type}")
-            result = await extractor_cls(local_path).extract()
+            extractor_instance = extractor_cls(local_path)
+            result = await extractor_instance.extract()
 
-            # Stage 2: OCR check
+            # Stage 2: OCR check (reuse the same extractor instance)
             await self._update_stage(job, "ocr_check", 25)
-            needs_ocr = await extractor_cls(local_path).detect_needs_ocr()
+            needs_ocr = await extractor_instance.detect_needs_ocr()
             if needs_ocr:
                 logger.info("OCR required for document", document_id=document_id)
                 ocr_text, ocr_applied = await ocr_processor.process_full_pdf(local_path)
