@@ -263,7 +263,8 @@ class IndexingService:
 
         # Re-run via TaskManager
         await self._task_manager.create_task(
-            job_id,                self._run_indexing(
+            job_id,
+            self._run_indexing(
                 job_id=job_id,
                 chunks=chunks,
                 collection_name=job.collection_name,
@@ -382,6 +383,7 @@ class IndexingService:
             Dict with 'healthy', 'provider', 'model', 'latency_ms'.
         """
         import time
+
         start = time.monotonic()
         healthy = await self._provider.health_check()
         latency_ms = (time.monotonic() - start) * 1000
@@ -443,6 +445,7 @@ class IndexingService:
         """
         try:
             from arq import create_pool
+
             pool = await create_pool(settings.redis_url)
             await pool.enqueue_job(
                 "index_document",

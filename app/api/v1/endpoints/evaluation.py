@@ -66,6 +66,7 @@ async def run_evaluation(
         # Prefer the app-level singleton; fall back to None (metrics-only mode)
         try:
             from app.main import _retrieval_service  # type: ignore[attr-defined]
+
             retrieval_svc = _retrieval_service
         except (ImportError, AttributeError):
             retrieval_svc = None

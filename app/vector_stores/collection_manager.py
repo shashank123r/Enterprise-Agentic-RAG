@@ -154,9 +154,7 @@ class CollectionManager:
                 "Refusing to delete versioned collection without force=True",
                 name=name,
             )
-            raise VectorStoreError(
-                f"Use force=True to delete versioned collection '{name}'"
-            )
+            raise VectorStoreError(f"Use force=True to delete versioned collection '{name}'")
 
         await self._store.delete_collection(name)
         logger.info("Deleted collection", name=name)

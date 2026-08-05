@@ -119,6 +119,7 @@ class TestLocalStorageProvider:
     @pytest.mark.asyncio
     async def test_rename_nonexistent(self, storage: LocalStorageProvider) -> None:
         from app.storage.exceptions import StorageFileNotFound
+
         with pytest.raises(StorageFileNotFound):
             await storage.rename("ghost.txt", "nowhere.txt")
 

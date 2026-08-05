@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 #   1. tiktoken "cl100k_base"  → best accuracy for LLaMA-3/GPT-4 family
 #   2. Character ratio fallback → len(text) // 4  (least preferred)
 
+
 @functools.lru_cache(maxsize=4)
 def _get_encoding(model_key: str):
     """Return a tiktoken encoding, cached per model key."""
@@ -35,7 +36,7 @@ def _get_encoding(model_key: str):
             "gpt-4": "cl100k_base",
             "gpt-3.5": "cl100k_base",
             "claude": "cl100k_base",
-            "llama": "cl100k_base",      # Approximation — within 5% of LLaMA-3
+            "llama": "cl100k_base",  # Approximation — within 5% of LLaMA-3
             "mistral": "cl100k_base",
             "mixtral": "cl100k_base",
             "default": "cl100k_base",
@@ -153,7 +154,9 @@ class TokenBudget:
 
     def allocate_for_history(self, total_budget: int) -> int:
         """Remaining tokens after context + response + system."""
-        used = self.allocate_for_context() + self.allocate_for_response() + self.allocate_for_system()
+        used = (
+            self.allocate_for_context() + self.allocate_for_response() + self.allocate_for_system()
+        )
         return max(0, total_budget - used)
 
     # ── Token counting ─────────────────────────────────────────────────────
@@ -271,7 +274,9 @@ class TokenBudget:
             "context_tokens": context_tokens,
             "response_tokens": response_tokens,
             "total_tokens": total,
-            "usage_percent": round((total / self._model_limit) * 100, 1) if self._model_limit else 0,
+            "usage_percent": (
+                round((total / self._model_limit) * 100, 1) if self._model_limit else 0
+            ),
             "remaining_tokens": max(0, self._model_limit - total),
             "within_limit": total <= self._model_limit,
             "tokenizer": "tiktoken/cl100k_base" if _get_encoding(self._model) else "char_ratio",

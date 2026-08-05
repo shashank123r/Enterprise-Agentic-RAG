@@ -67,6 +67,7 @@ class TestTokenBudget:
 
     def test_validate_budget_raises_on_overflow(self):
         from app.rag.exceptions import RAGTokenBudgetExceeded
+
         budget = TokenBudget(model="default")  # limit = 8192
         with pytest.raises(RAGTokenBudgetExceeded):
             budget.validate_budget(

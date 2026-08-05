@@ -38,6 +38,7 @@ class LoggingMetricsBackend(MetricsBackend):
 
     def __init__(self) -> None:
         from app.core.logging import get_logger
+
         self._logger = get_logger("metrics")
         self._counters: dict[str, int] = defaultdict(int)
 
@@ -94,6 +95,7 @@ class Timer:
 
 
 # ── Convenience helpers ────────────────────────────────────
+
 
 def incr(metric: str, value: int = 1, tags: dict[str, str] | None = None) -> None:
     """Increment a counter metric."""

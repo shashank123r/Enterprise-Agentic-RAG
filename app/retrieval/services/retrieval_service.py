@@ -138,7 +138,8 @@ class RetrievalService:
         if self._provider is not None and provider_ok:
             try:
                 from app.core.config import settings
-                provider_model = getattr(self._provider, '_model', None) or settings.EMBEDDING_MODEL
+
+                provider_model = getattr(self._provider, "_model", None) or settings.EMBEDDING_MODEL
                 configured_model = settings.EMBEDDING_MODEL
                 if provider_model != configured_model:
                     errors.append(
@@ -163,13 +164,16 @@ class RetrievalService:
             try:
                 exists = await self._store.collection_exists(collection_name)
                 if not exists:
-                    errors.append(f"Collection '{collection_name}' does not exist. Run indexing first.")
+                    errors.append(
+                        f"Collection '{collection_name}' does not exist. Run indexing first."
+                    )
                 elif store_ok:
                     # Check collection stats for dimension/model version consistency
                     try:
                         stats = await self._store.collection_stats(collection_name)
                         if stats.get("exists"):
                             from app.core.config import settings
+
                             expected_dim = settings.VECTOR_STORE_DIMENSION
                             schema = stats.get("schema", {})
                             vector_field_type = schema.get("vector", "")
@@ -416,9 +420,7 @@ class RetrievalService:
         # Overall readiness
         bm25_ok = results["bm25_index"].get("healthy", False) if results["bm25_index"] else True
         results["retrieval_ready"] = (
-            results["embedding_provider"]
-            and results["vector_store"]
-            and bm25_ok
+            results["embedding_provider"] and results["vector_store"] and bm25_ok
         )
 
         return results

@@ -164,6 +164,7 @@ class RAGContextManager:
         still be dominated by one document.
         """
         from collections import defaultdict
+
         doc_counts: dict[str, int] = defaultdict(int)
         balanced: list[RetrievedChunk] = []
         max_per_doc = max(2, len(chunks) // 3)

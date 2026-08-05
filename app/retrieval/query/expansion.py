@@ -31,7 +31,6 @@ _SYNONYMS: dict[str, list[str]] = {
     "data": ["information", "dataset", "records", "statistics"],
     "analysis": ["analytics", "examination", "study", "assessment", "evaluation"],
     "report": ["document", "summary", "overview", "briefing"],
-
     # Technology
     "software": ["application", "program", "system", "tool"],
     "database": ["repository", "data store", "storage", "warehouse"],
@@ -43,7 +42,6 @@ _SYNONYMS: dict[str, list[str]] = {
     "model": ["framework", "architecture", "approach", "system"],
     "performance": ["speed", "throughput", "latency", "efficiency"],
     "scalability": ["elasticity", "capacity", "growth", "expansion"],
-
     # AI/ML
     "machine learning": ["ml", "deep learning", "artificial intelligence", "neural network"],
     "ai": ["artificial intelligence", "machine learning", "intelligent system"],
@@ -53,7 +51,6 @@ _SYNONYMS: dict[str, list[str]] = {
     "embedding": ["vector", "representation", "encoding", "feature"],
     "retrieval": ["search", "lookup", "indexing", "query"],
     "generation": ["synthesis", "creation", "production", "output"],
-
     # Document
     "document": ["file", "paper", "report", "article", "page"],
     "chapter": ["section", "part", "segment", "topic"],
@@ -111,15 +108,19 @@ class QueryExpander:
                         if expanded_count >= max_terms:
                             break
                         # Add top synonyms
-                        relevant = [s for s in synonyms if s not in query.lower() and s not in expanded_terms]
-                        expanded_terms.extend(relevant[:self._max_expansions])
+                        relevant = [
+                            s
+                            for s in synonyms
+                            if s not in query.lower() and s not in expanded_terms
+                        ]
+                        expanded_terms.extend(relevant[: self._max_expansions])
                         expanded_count += 1
 
                 # Check single word
                 if word in _SYNONYMS and expanded_count < max_terms:
                     synonyms = _SYNONYMS[word]
                     relevant = [s for s in synonyms if s not in words and s not in expanded_terms]
-                    expanded_terms.extend(relevant[:self._max_expansions])
+                    expanded_terms.extend(relevant[: self._max_expansions])
                     expanded_count += 1
 
             if expanded_terms:

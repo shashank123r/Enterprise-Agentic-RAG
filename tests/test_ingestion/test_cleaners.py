@@ -61,8 +61,7 @@ class TestRemovePageNumbers:
     def test_bare_number_removed(self):
         result = remove_page_numbers("Content\n42\nMore content")
         assert "42" not in result.split("\n") or all(
-            "42" not in line or "Content" in line or "More" in line
-            for line in result.split("\n")
+            "42" not in line or "Content" in line or "More" in line for line in result.split("\n")
         )
 
     def test_page_n_of_m_removed(self):

@@ -97,15 +97,17 @@ class ContextBuilder:
 
             # Build citation entry
             if chunk.chunk_id not in seen_citations:
-                citations.append({
-                    "chunk_id": chunk.chunk_id,
-                    "document_id": chunk.document_id,
-                    "text_preview": chunk.text[:200],
-                    "page_number": chunk.page_number,
-                    "section_title": chunk.section_title,
-                    "score": chunk.score,
-                    "rerank_score": chunk.rerank_score,
-                })
+                citations.append(
+                    {
+                        "chunk_id": chunk.chunk_id,
+                        "document_id": chunk.document_id,
+                        "text_preview": chunk.text[:200],
+                        "page_number": chunk.page_number,
+                        "section_title": chunk.section_title,
+                        "score": chunk.score,
+                        "rerank_score": chunk.rerank_score,
+                    }
+                )
                 seen_citations.add(chunk.chunk_id)
 
         # Build RetrievedChunk objects from merged candidates
@@ -197,9 +199,7 @@ class ContextBuilder:
                 current.text = f"{current.text}\n\n{next_c.text}"
                 current.score = max(current.score, next_c.score)
                 if next_c.rerank_score is not None:
-                    current.rerank_score = max(
-                        current.rerank_score or 0, next_c.rerank_score
-                    )
+                    current.rerank_score = max(current.rerank_score or 0, next_c.rerank_score)
             else:
                 merged.append(current)
                 current = next_c

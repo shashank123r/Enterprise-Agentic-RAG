@@ -8,7 +8,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ── API Request / Response Schemas ────────────
 
 
@@ -19,10 +18,15 @@ class RetrievalRequest(BaseModel):
     collection_name: str = Field("documents", description="Milvus collection to search")
     top_k: int = Field(10, ge=1, le=100, description="Number of results to return")
     method: str = Field("hybrid", description="Retrieval method: dense, bm25, hybrid, parent_child")
-    filters: dict[str, Any] = Field(default_factory=dict, description="Metadata filters (e.g. {'language': 'en', 'document_id': '...'})")
+    filters: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Metadata filters (e.g. {'language': 'en', 'document_id': '...'})",
+    )
     rerank: bool = Field(True, description="Whether to apply reranking")
     rerank_top_k: int = Field(20, ge=1, le=200, description="Number of candidates to rerank")
-    hybrid_alpha: float = Field(0.5, ge=0.0, le=1.0, description="Dense weight for hybrid search (0=BM25, 1=dense)")
+    hybrid_alpha: float = Field(
+        0.5, ge=0.0, le=1.0, description="Dense weight for hybrid search (0=BM25, 1=dense)"
+    )
     min_score: float | None = Field(None, ge=0.0, description="Minimum similarity score threshold")
     query_rewrite: bool = Field(False, description="Apply query rewriting before search")
     query_expansion: bool = Field(False, description="Apply query expansion (synonym expansion)")
@@ -97,7 +101,9 @@ class RetrievalResult(BaseModel):
     chunks: list[RetrievedChunk] = Field(default_factory=list, description="Retrieved chunks")
     citations: list[Citation] = Field(default_factory=list, description="Generated citations")
     context: str | None = Field(None, description="Assembled context window")
-    metrics: RetrievalMetrics = Field(default_factory=RetrievalMetrics, description="Performance metrics")
+    metrics: RetrievalMetrics = Field(
+        default_factory=RetrievalMetrics, description="Performance metrics"
+    )
     method: str = Field("hybrid", description="Retrieval method used")
     total_results: int = 0
 

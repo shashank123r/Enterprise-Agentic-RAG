@@ -17,7 +17,6 @@ from app.rag.orchestrator import RAGOrchestrator
 from app.rag.schemas import RAGResponse
 from app.retrieval.schemas import RetrievedChunk, RetrievalResult
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -127,9 +126,7 @@ class TestOrchestratorAnswer:
         mock_retrieval_service: AsyncMock,
     ):
         """When retrieval returns no chunks, answer is returned with empty citations."""
-        mock_retrieval_service.search = AsyncMock(
-            return_value=_make_retrieval_result(chunks=[])
-        )
+        mock_retrieval_service.search = AsyncMock(return_value=_make_retrieval_result(chunks=[]))
         mock_resp = _mock_llm_response("I don't know.")
 
         with patch.object(orchestrator, "client") as mock_client:
@@ -206,8 +203,7 @@ class TestOrchestratorAnswerStream:
         """Token events concatenate to the full LLM response."""
         tokens = ["The ", "answer ", "is ", "42."]
         sse_lines = [
-            f'data: {{"choices": [{{"delta": {{"content": {json.dumps(t)}}}}}]}}'
-            for t in tokens
+            f'data: {{"choices": [{{"delta": {{"content": {json.dumps(t)}}}}}]}}' for t in tokens
         ] + ["data: [DONE]"]
 
         async def fake_aiter_lines():
@@ -223,9 +219,7 @@ class TestOrchestratorAnswerStream:
 
         with patch.object(orchestrator, "client") as mock_client:
             mock_client.stream = MagicMock(return_value=mock_stream_response)
-            events = await _collect_stream(
-                orchestrator.answer_stream(question="Q?")
-            )
+            events = await _collect_stream(orchestrator.answer_stream(question="Q?"))
 
         token_events = [e for e in events if e["type"] == "token"]
         full_text = "".join(e["content"] for e in token_events)
@@ -245,9 +239,7 @@ class TestOrchestratorAnswerStream:
 
         with patch.object(orchestrator, "client") as mock_client:
             mock_client.stream = MagicMock(return_value=mock_stream_response)
-            events = await _collect_stream(
-                orchestrator.answer_stream(question="Q?")
-            )
+            events = await _collect_stream(orchestrator.answer_stream(question="Q?"))
 
         error_events = [e for e in events if e["type"] == "error"]
         assert error_events, "Expected at least one error event on LLM failure"
@@ -260,13 +252,9 @@ class TestOrchestratorAnswerStream:
         mock_retrieval_service: AsyncMock,
     ):
         """When retrieval raises, the stream yields a single error event."""
-        mock_retrieval_service.search = AsyncMock(
-            side_effect=RuntimeError("Milvus unavailable")
-        )
+        mock_retrieval_service.search = AsyncMock(side_effect=RuntimeError("Milvus unavailable"))
 
-        events = await _collect_stream(
-            orchestrator.answer_stream(question="Q?")
-        )
+        events = await _collect_stream(orchestrator.answer_stream(question="Q?"))
 
         assert any(e["type"] == "error" for e in events)
         assert not any(e["type"] == "token" for e in events)

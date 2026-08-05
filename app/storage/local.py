@@ -49,9 +49,7 @@ class LocalStorageProvider(StorageProvider):
         clean = Path(path).as_posix().lstrip("/")
         resolved = (self._root / clean).resolve()
         if not str(resolved).startswith(str(self._root)):
-            raise StoragePermissionDenied(
-                path, f"Path traversal detected: {path}"
-            )
+            raise StoragePermissionDenied(path, f"Path traversal detected: {path}")
         return resolved
 
     def _resolve_temp(self, path: str) -> Path:
@@ -59,9 +57,7 @@ class LocalStorageProvider(StorageProvider):
         clean = Path(path).as_posix().lstrip("/")
         resolved = (self._temp / clean).resolve()
         if not str(resolved).startswith(str(self._temp)):
-            raise StoragePermissionDenied(
-                path, f"Path traversal detected in temp: {path}"
-            )
+            raise StoragePermissionDenied(path, f"Path traversal detected in temp: {path}")
         return resolved
 
     # ── StorageProvider interface ──────────────────────────
@@ -224,7 +220,10 @@ class LocalStorageProvider(StorageProvider):
         return await run_in_executor(_do)
 
     async def generate_storage_path(
-        self, prefix: str, document_id: str, filename: str = "",
+        self,
+        prefix: str,
+        document_id: str,
+        filename: str = "",
     ) -> str:
         def _do() -> str:
             if filename:

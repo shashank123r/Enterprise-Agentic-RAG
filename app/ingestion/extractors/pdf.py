@@ -97,15 +97,27 @@ class PdfExtractor(BaseExtractor):
                         page_text = page.extract_text() or ""
                         section_title = self._detect_section_title(page_text)
                         result.pages.append(
-                            PageResult(page_number=page_num, text=page_text, section_title=section_title)
+                            PageResult(
+                                page_number=page_num, text=page_text, section_title=section_title
+                            )
                         )
                         tables = page.extract_tables() or []
                         for t_idx, t_data in enumerate(tables):
                             if not t_data:
                                 continue
                             headers = [h or "" for h in (t_data[0] if t_data else [])]
-                            rows = [[c or "" for c in row] for row in (t_data[1:] if len(t_data) > 1 else [])]
-                            result.tables.append(TableResult(page_number=page_num, table_index=t_idx, headers=headers, rows=rows))
+                            rows = [
+                                [c or "" for c in row]
+                                for row in (t_data[1:] if len(t_data) > 1 else [])
+                            ]
+                            result.tables.append(
+                                TableResult(
+                                    page_number=page_num,
+                                    table_index=t_idx,
+                                    headers=headers,
+                                    rows=rows,
+                                )
+                            )
 
             await run_in_executor(_extract_with_pdfplumber)
         except Exception as e:
@@ -137,7 +149,15 @@ class PdfExtractor(BaseExtractor):
                     for img in page.images:
                         image_count += 1
                         fmt = Path(img.name).suffix.lstrip(".").lower() or "png"
-                        result.images.append(ImageResult(page_number=page_num, image_index=image_count, image_data=img.data, format=fmt, caption=f"Image from page {page_num}"))
+                        result.images.append(
+                            ImageResult(
+                                page_number=page_num,
+                                image_index=image_count,
+                                image_data=img.data,
+                                format=fmt,
+                                caption=f"Image from page {page_num}",
+                            )
+                        )
 
             await run_in_executor(_extract)
         except Exception as e:
@@ -150,7 +170,11 @@ class PdfExtractor(BaseExtractor):
             stripped = line.strip()
             if not stripped:
                 continue
-            if len(stripped) < 100 and not stripped.endswith(".") and re.search(r"^[A-Z][a-z]", stripped):
+            if (
+                len(stripped) < 100
+                and not stripped.endswith(".")
+                and re.search(r"^[A-Z][a-z]", stripped)
+            ):
                 return stripped
         return None
 

@@ -71,8 +71,7 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
         allowed = _ALLOWED_TRANSITIONS.get(job.status, set())
         if new_status not in allowed:
             raise ValueError(
-                f"Invalid status transition: {job.status} → {new_status}. "
-                f"Allowed: {allowed}"
+                f"Invalid status transition: {job.status} → {new_status}. " f"Allowed: {allowed}"
             )
 
         update_values: dict[str, Any] = {"status": new_status}
@@ -134,9 +133,7 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
 
         total = total_chunks if total_chunks is not None else job.total_chunks
         if total > 0:
-            update_values["progress_percent"] = round(
-                (processed_chunks / total) * 100, 1
-            )
+            update_values["progress_percent"] = round((processed_chunks / total) * 100, 1)
 
         stmt = (
             update(IndexingJob)
@@ -219,11 +216,7 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
             update_values["cache_hits"] = cache_hits
 
         if update_values:
-            stmt = (
-                update(IndexingJob)
-                .where(IndexingJob.id == job_id)
-                .values(**update_values)
-            )
+            stmt = update(IndexingJob).where(IndexingJob.id == job_id).values(**update_values)
             await self.db.execute(stmt)
             await self.db.flush()
 
@@ -297,9 +290,6 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
         """Get job counts grouped by status."""
         from sqlalchemy import func
 
-        stmt = (
-            select(IndexingJob.status, func.count(IndexingJob.id))
-            .group_by(IndexingJob.status)
-        )
+        stmt = select(IndexingJob.status, func.count(IndexingJob.id)).group_by(IndexingJob.status)
         result = await self.db.execute(stmt)
         return dict(result.all())

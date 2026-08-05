@@ -17,7 +17,11 @@ from app.core.logging import get_logger
 from app.embeddings.cache import EmbeddingCacheService
 from app.embeddings.providers.base import EmbeddingProvider
 from app.vector_stores.base import VectorRecord, VectorStore
-from app.embeddings.exceptions import DuplicateInputIdError, EmbeddingError, UnsupportedLanguageError
+from app.embeddings.exceptions import (
+    DuplicateInputIdError,
+    EmbeddingError,
+    UnsupportedLanguageError,
+)
 from app.vector_stores.exceptions import VectorDimensionMismatch, BatchInsertError
 
 logger = get_logger(__name__)
@@ -99,7 +103,13 @@ class BatchIndexer:
 
         if cancel_event and cancel_event.is_set():
             logger.warning("Indexing cancelled before starting", document_id=document_id)
-            return {"indexed": 0, "failed": 0, "cache_hits": 0, "duration_ms": 0.0, "cancelled": True}
+            return {
+                "indexed": 0,
+                "failed": 0,
+                "cache_hits": 0,
+                "duration_ms": 0.0,
+                "cancelled": True,
+            }
 
         if self._dimension is None:
             self._dimension = await self._provider.dimension()
@@ -111,10 +121,7 @@ class BatchIndexer:
         start_time = time.monotonic()
 
         # Split chunks into batches
-        batches = [
-            chunks[i : i + self._batch_size]
-            for i in range(0, total, self._batch_size)
-        ]
+        batches = [chunks[i : i + self._batch_size] for i in range(0, total, self._batch_size)]
 
         logger.info(
             "Starting batch indexing",
@@ -145,10 +152,7 @@ class BatchIndexer:
                 )
 
         # Process batches with concurrency control
-        tasks = [
-            _process_batch(batch, idx)
-            for idx, batch in enumerate(batches)
-        ]
+        tasks = [_process_batch(batch, idx) for idx, batch in enumerate(batches)]
 
         done_count = 0
         for coro in asyncio.as_completed(tasks):
@@ -209,7 +213,9 @@ class BatchIndexer:
 
         if self._cache is not None and self._cache.enabled:
             cached = await self._cache.get_batch(
-                checksums, self._embedding_model, self._dimension or 0,
+                checksums,
+                self._embedding_model,
+                self._dimension or 0,
             )
             for idx, vec in cached.items():
                 vectors[idx] = vec
@@ -272,8 +278,6 @@ class BatchIndexer:
                 for i in uncached_indices:
                     vectors[i] = None
 
-
-
         # Step 3: Build VectorRecords
         records: list[VectorRecord] = []
         failed_count = 0
@@ -284,21 +288,23 @@ class BatchIndexer:
                 failed_count += 1
                 continue
 
-            records.append(VectorRecord(
-                chunk_id=chunk.get("chunk_id", ""),
-                document_id=document_id,
-                vector=vec,
-                text=chunk.get("text", ""),
-                metadata=chunk.get("metadata", {}),
-                page_number=chunk.get("page_number"),
-                chunk_index=chunk.get("chunk_index", 0),
-                section_title=chunk.get("section_title"),
-                language=chunk.get("language", "unknown"),
-                checksum=chunk.get("checksum", ""),
-                version=chunk.get("version", 1),
-                source=chunk.get("source", ""),
-                embedding_model=self._embedding_model,
-            ))
+            records.append(
+                VectorRecord(
+                    chunk_id=chunk.get("chunk_id", ""),
+                    document_id=document_id,
+                    vector=vec,
+                    text=chunk.get("text", ""),
+                    metadata=chunk.get("metadata", {}),
+                    page_number=chunk.get("page_number"),
+                    chunk_index=chunk.get("chunk_index", 0),
+                    section_title=chunk.get("section_title"),
+                    language=chunk.get("language", "unknown"),
+                    checksum=chunk.get("checksum", ""),
+                    version=chunk.get("version", 1),
+                    source=chunk.get("source", ""),
+                    embedding_model=self._embedding_model,
+                )
+            )
 
         # Step 4: Upsert into Milvus
         if records:

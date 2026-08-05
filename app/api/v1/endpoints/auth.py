@@ -93,11 +93,13 @@ async def logout(
     if credentials:
         try:
             from jose import JWTError
+
             payload = decode_token(credentials.credentials)
             jti = payload.get("jti")
             exp = payload.get("exp", 0)
             if jti and exp:
                 import time
+
                 ttl = max(1, int(exp - time.time()))
                 blacklist_key = f"{REDIS_SESSION_PREFIX}blacklist:{jti}"
                 await redis_manager.set(blacklist_key, "1", ttl=ttl)

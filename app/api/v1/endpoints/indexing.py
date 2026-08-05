@@ -61,8 +61,7 @@ async def start_indexing(
     if not chunks:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No chunks found for document {document_id}. "
-                   "Ingest the document first.",
+            detail=f"No chunks found for document {document_id}. " "Ingest the document first.",
         )
 
     # Convert ORM chunks to dict format expected by IndexingService
@@ -71,18 +70,20 @@ async def start_indexing(
         meta = dict(c.custom_metadata) if c.custom_metadata else {}
         meta["document_id"] = document_id
         meta["chunk_id"] = c.id
-        chunk_dicts.append({
-            "chunk_id": c.id,
-            "text": c.content,
-            "metadata": meta,
-            "checksum": c.content_checksum,
-            "chunk_index": c.chunk_index,
-            "page_number": c.page_number,
-            "section_title": c.section_title,
-            "language": c.language or "unknown",
-            "version": 1,
-            "source": "",
-        })
+        chunk_dicts.append(
+            {
+                "chunk_id": c.id,
+                "text": c.content,
+                "metadata": meta,
+                "checksum": c.content_checksum,
+                "chunk_index": c.chunk_index,
+                "page_number": c.page_number,
+                "section_title": c.section_title,
+                "language": c.language or "unknown",
+                "version": 1,
+                "source": "",
+            }
+        )
 
     job = await service.start_indexing(
         db=db,
@@ -300,8 +301,7 @@ async def rebuild_document_index(
     if not chunks:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No chunks found for document {document_id}. "
-                   "Ingest the document first.",
+            detail=f"No chunks found for document {document_id}. " "Ingest the document first.",
         )
 
     chunk_dicts = _chunks_to_dicts(chunks, document_id)
@@ -378,16 +378,18 @@ def _chunks_to_dicts(chunks: list[Any], document_id: str) -> list[dict[str, Any]
         meta = dict(c.custom_metadata) if c.custom_metadata else {}
         meta["document_id"] = document_id
         meta["chunk_id"] = c.id
-        chunk_dicts.append({
-            "chunk_id": c.id,
-            "text": c.content,
-            "metadata": meta,
-            "checksum": c.content_checksum,
-            "chunk_index": c.chunk_index,
-            "page_number": c.page_number,
-            "section_title": c.section_title,
-            "language": c.language or "unknown",
-            "version": 1,
-            "source": "",
-        })
+        chunk_dicts.append(
+            {
+                "chunk_id": c.id,
+                "text": c.content,
+                "metadata": meta,
+                "checksum": c.content_checksum,
+                "chunk_index": c.chunk_index,
+                "page_number": c.page_number,
+                "section_title": c.section_title,
+                "language": c.language or "unknown",
+                "version": 1,
+                "source": "",
+            }
+        )
     return chunk_dicts

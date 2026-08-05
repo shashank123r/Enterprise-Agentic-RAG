@@ -123,7 +123,9 @@ class PromptBuilder:
         # ── System prompt ──────────────────────────────────────────────────
         system_content = self._system_prompt
         if extra_instructions:
-            system_content = f"{system_content}\n\n━━━ Additional Instructions ━━━\n{extra_instructions}"
+            system_content = (
+                f"{system_content}\n\n━━━ Additional Instructions ━━━\n{extra_instructions}"
+            )
         messages.append({"role": "system", "content": system_content})
 
         # ── Conversation history ───────────────────────────────────────────

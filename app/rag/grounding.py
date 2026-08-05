@@ -66,15 +66,13 @@ def _tfidf_vector(text: str, idf: dict[str, float]) -> dict[str, float]:
 def _build_idf(documents: list[str]) -> dict[str, float]:
     """Build IDF weights from a corpus of documents."""
     import math
+
     n = len(documents)
     df: dict[str, int] = {}
     for doc in documents:
         for token in set(_tokenize(doc)):
             df[token] = df.get(token, 0) + 1
-    return {
-        token: math.log((n + 1) / (count + 1)) + 1.0
-        for token, count in df.items()
-    }
+    return {token: math.log((n + 1) / (count + 1)) + 1.0 for token, count in df.items()}
 
 
 class GroundingValidator:
@@ -132,10 +130,14 @@ class GroundingValidator:
                 valid_count += 1
             else:
                 invalid_citations.append(str(num))
-                issues.append(f"Citation [{num}] references a non-existent source (only {len(chunks)} sources available)")
+                issues.append(
+                    f"Citation [{num}] references a non-existent source (only {len(chunks)} sources available)"
+                )
 
         if not citation_nums and len(answer.strip()) > 80 and chunks:
-            issues.append("Answer lacks citations despite having source context — add [N] references")
+            issues.append(
+                "Answer lacks citations despite having source context — add [N] references"
+            )
 
         # ── 2. No-information detection ────────────────────────────────────
         no_info_phrases = [
@@ -180,12 +182,14 @@ class GroundingValidator:
                     best_sim, best_chunk_id = sims[0] if sims else (0.0, "")
 
                     support_scores.append(best_sim)
-                    sentence_scores.append({
-                        "sentence": sentence[:120],
-                        "support_score": round(best_sim, 3),
-                        "supported": best_sim >= self._threshold,
-                        "best_chunk_id": best_chunk_id,
-                    })
+                    sentence_scores.append(
+                        {
+                            "sentence": sentence[:120],
+                            "support_score": round(best_sim, 3),
+                            "supported": best_sim >= self._threshold,
+                            "best_chunk_id": best_chunk_id,
+                        }
+                    )
 
                     if best_sim >= self._threshold:
                         evidence_map[sentence[:60]] = best_chunk_id
@@ -194,7 +198,7 @@ class GroundingValidator:
                         if self._is_factual_claim(sentence) and not admits_no_info:
                             unsupported_statements.append(sentence[:120])
                             issues.append(
-                                f"Low grounding confidence ({best_sim:.2f}) for: \"{sentence[:80]}...\""
+                                f'Low grounding confidence ({best_sim:.2f}) for: "{sentence[:80]}..."'
                             )
 
                 if support_scores:
@@ -304,8 +308,28 @@ class GroundingValidator:
         """Extract key terms for diagnostic fact-checking."""
         words = re.findall(r"\b[a-zA-Z]{4,}\b", text.lower())
         stopwords = {
-            "what", "when", "where", "why", "how", "which", "that", "this",
-            "with", "from", "they", "have", "been", "were", "will", "would",
-            "could", "should", "does", "about", "there", "their", "your",
+            "what",
+            "when",
+            "where",
+            "why",
+            "how",
+            "which",
+            "that",
+            "this",
+            "with",
+            "from",
+            "they",
+            "have",
+            "been",
+            "were",
+            "will",
+            "would",
+            "could",
+            "should",
+            "does",
+            "about",
+            "there",
+            "their",
+            "your",
         }
         return [w for w in words if w not in stopwords][:max_terms]

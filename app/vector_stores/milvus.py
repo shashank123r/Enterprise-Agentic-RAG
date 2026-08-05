@@ -383,9 +383,7 @@ class MilvusVectorStore(VectorStore):
         try:
             prefixed = await self._run_sync(utility.list_collections, using=self._alias)
             return [
-                self._strip_prefix(c)
-                for c in prefixed
-                if c.startswith(self._collection_prefix)
+                self._strip_prefix(c) for c in prefixed if c.startswith(self._collection_prefix)
             ]
         except MilvusException as e:
             raise VectorStoreError(f"Failed to list collections: {e}")
@@ -409,13 +407,9 @@ class MilvusVectorStore(VectorStore):
 
         try:
             collection = Collection(prefixed, using=self._alias)
-            schema_fields = {
-                field.name: str(field.dtype)
-                for field in collection.schema.fields
-            }
+            schema_fields = {field.name: str(field.dtype) for field in collection.schema.fields}
             indexes = [
-                {"field": idx.field_name, "params": idx.params}
-                for idx in collection.indexes
+                {"field": idx.field_name, "params": idx.params} for idx in collection.indexes
             ]
             num_entities = await self._run_sync(lambda: collection.num_entities)
 
@@ -488,7 +482,9 @@ class MilvusVectorStore(VectorStore):
                 logger.error("Batch insert failed", batch_index=i // batch_size, error=str(e))
             except Exception as e:
                 errors.append(f"Batch {i // batch_size} unexpected error: {e}")
-                logger.error("Unexpected batch insert error", batch_index=i // batch_size, error=str(e))
+                logger.error(
+                    "Unexpected batch insert error", batch_index=i // batch_size, error=str(e)
+                )
 
         # Flush after all batches
         if total_upserted > 0:
@@ -622,9 +618,18 @@ class MilvusVectorStore(VectorStore):
         }
 
         fields = output_fields or [
-            "chunk_id", "document_id", "text", "metadata",
-            "page_number", "chunk_index", "section_title",
-            "language", "checksum", "version", "source", "embedding_model",
+            "chunk_id",
+            "document_id",
+            "text",
+            "metadata",
+            "page_number",
+            "chunk_index",
+            "section_title",
+            "language",
+            "checksum",
+            "version",
+            "source",
+            "embedding_model",
         ]
 
         try:
@@ -652,19 +657,22 @@ class MilvusVectorStore(VectorStore):
                     else:
                         try:
                             import json
+
                             metadata = json.loads(entity.metadata)
                         except (json.JSONDecodeError, TypeError):
                             metadata = {"raw": str(entity.metadata)}
 
-                search_results.append(VectorSearchResult(
-                    id=str(hit.id),
-                    score=hit.score,
-                    text=getattr(entity, "text", ""),
-                    metadata=metadata,
-                    chunk_id=getattr(entity, "chunk_id", ""),
-                    document_id=getattr(entity, "document_id", ""),
-                    chunk_index=getattr(entity, "chunk_index", 0),
-                ))
+                search_results.append(
+                    VectorSearchResult(
+                        id=str(hit.id),
+                        score=hit.score,
+                        text=getattr(entity, "text", ""),
+                        metadata=metadata,
+                        chunk_id=getattr(entity, "chunk_id", ""),
+                        document_id=getattr(entity, "document_id", ""),
+                        chunk_index=getattr(entity, "chunk_index", 0),
+                    )
+                )
 
             logger.debug(
                 "Vector search complete",

@@ -192,7 +192,10 @@ class StorageProvider(ABC):
 
     @abstractmethod
     async def generate_storage_path(
-        self, prefix: str, document_id: str, filename: str = "",
+        self,
+        prefix: str,
+        document_id: str,
+        filename: str = "",
     ) -> str:
         """Generate a permanent storage path for a document or derived artifact.
 

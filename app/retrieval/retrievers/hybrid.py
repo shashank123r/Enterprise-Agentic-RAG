@@ -59,7 +59,7 @@ class HybridRetriever(Retriever):
     ) -> None:
         self._dense = dense_retriever
         self._bm25 = bm25_retriever
-        self._alpha = alpha        # 0 = pure BM25, 1 = pure dense
+        self._alpha = alpha  # 0 = pure BM25, 1 = pure dense
         self._recency_boost = recency_boost  # 0 = off, 0.1-0.3 = mild boost
 
     async def retrieve(
@@ -105,9 +105,7 @@ class HybridRetriever(Retriever):
 
             try:
                 with RetrievalTimer("hybrid.parallel_fetch"):
-                    dense_results, bm25_results = await asyncio.gather(
-                        dense_task, bm25_task
-                    )
+                    dense_results, bm25_results = await asyncio.gather(dense_task, bm25_task)
             except Exception as e:
                 logger.warning("Parallel retrieval partial failure", error=str(e))
                 # Try to get at least one result set
@@ -287,6 +285,7 @@ class HybridRetriever(Retriever):
                         timestamps[c.chunk_id] = float(raw)
                     elif isinstance(raw, str):
                         import datetime
+
                         # Try ISO parse
                         dt = datetime.datetime.fromisoformat(raw.rstrip("Z"))
                         timestamps[c.chunk_id] = dt.timestamp()

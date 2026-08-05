@@ -39,6 +39,7 @@ async def get_storage() -> StorageProvider:
     """
     return await _get_storage_provider()
 
+
 # ── Vector Store DI ───────────────────────────
 
 
@@ -96,6 +97,7 @@ async def _extract_token_payload(
         if jti:
             from app.cache.redis import redis_manager
             from app.core.constants import REDIS_SESSION_PREFIX
+
             blacklist_key = f"{REDIS_SESSION_PREFIX}blacklist:{jti}"
             try:
                 is_blacklisted = await redis_manager.get(blacklist_key)
@@ -215,8 +217,7 @@ def require_role(minimum_role: Role):
         if actual_index > min_index:
             raise AuthorizationError(
                 message=(
-                    f"Role '{role.value}' is below minimum "
-                    f"required '{minimum_role.value}'"
+                    f"Role '{role.value}' is below minimum " f"required '{minimum_role.value}'"
                 ),
                 code="insufficient_role",
                 details={

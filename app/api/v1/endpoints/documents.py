@@ -56,6 +56,7 @@ async def _get_arq_pool():
     if _arq_pool is None:
         try:
             from arq import create_pool
+
             _arq_pool = await create_pool(
                 host=settings.REDIS_HOST,
                 port=settings.REDIS_PORT,
@@ -91,11 +92,13 @@ async def upload_document(
 
     # Detect MIME type via StorageProvider
     import magic
+
     def _detect_mime() -> str:
         detected = magic.from_buffer(content[:2048], mime=True)
         if detected == "application/octet-stream":
             return file.content_type or "application/octet-stream"
         return detected
+
     mime_type = await run_in_executor(_detect_mime)
 
     if mime_type not in ALLOWED_DOCUMENT_TYPES:
@@ -107,6 +110,7 @@ async def upload_document(
     # Save file to temp storage and compute checksum
     temp_filename = f"{uuid4()}_{file.filename}"
     import hashlib
+
     checksum = hashlib.sha256(content).hexdigest()
     temp_path = await storage.generate_temp_path(temp_filename)
     await storage.save(temp_path, content)
@@ -195,9 +199,7 @@ async def list_documents(
     )
     items = [DocumentResponse.model_validate(d) for d in documents]
     pages = max(1, (total + size - 1) // size)
-    return DocumentListResponse(
-        items=items, total=total, page=page, size=size, pages=pages
-    )
+    return DocumentListResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
 @router.get(
@@ -379,16 +381,20 @@ async def replace_document(
     # Detect MIME type and compute checksum via StorageProvider
     import magic
     import hashlib
+
     def _detect_and_hash() -> tuple[str, str]:
         mime = magic.from_buffer(content[:2048], mime=True)
         if mime == "application/octet-stream":
             mime = file.content_type or mime
         cksum = hashlib.sha256(content).hexdigest()
         return mime, cksum
+
     mime_type, checksum = await run_in_executor(_detect_and_hash)
 
     if mime_type not in ALLOWED_DOCUMENT_TYPES:
-        raise ValidationError(message=f"Unsupported file type: {mime_type}", code="unsupported_file_type")
+        raise ValidationError(
+            message=f"Unsupported file type: {mime_type}", code="unsupported_file_type"
+        )
 
     # Create new version record
     version_repo = DocumentVersionRepository(db)

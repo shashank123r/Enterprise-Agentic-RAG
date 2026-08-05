@@ -151,7 +151,7 @@ class QueryRewriter:
         for prefix in prefixes:
             match = re.match(prefix, text, re.IGNORECASE)
             if match:
-                return text[match.end():].strip()
+                return text[match.end() :].strip()
         return text
 
     @staticmethod

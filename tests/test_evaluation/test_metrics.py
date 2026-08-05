@@ -21,8 +21,8 @@ from app.evaluation.metrics import (
     recall_at_k,
 )
 
-
 # ── recall_at_k ───────────────────────────────────────────────────────────
+
 
 class TestRecallAtK:
     def test_perfect_recall(self):
@@ -48,6 +48,7 @@ class TestRecallAtK:
 
 # ── precision_at_k ────────────────────────────────────────────────────────
 
+
 class TestPrecisionAtK:
     def test_perfect_precision(self):
         assert precision_at_k(["a", "b"], ["a", "b", "c"], k=2) == 1.0
@@ -61,6 +62,7 @@ class TestPrecisionAtK:
 
 
 # ── MRR ──────────────────────────────────────────────────────────────────
+
 
 class TestMRR:
     def test_first_position(self):
@@ -89,6 +91,7 @@ class TestMRR:
 
 # ── nDCG ─────────────────────────────────────────────────────────────────
 
+
 class TestNDCG:
     def test_perfect_ranking(self):
         # Relevant items at top-2 positions → nDCG@2 = 1.0
@@ -107,6 +110,7 @@ class TestNDCG:
         # DCG = 1/log2(3) ≈ 0.631, IDCG = 1/log2(2) = 1.0
         ndcg = ndcg_at_k(["x", "a", "y"], ["a"], k=3)
         import math
+
         expected = (1 / math.log2(3)) / (1 / math.log2(2))
         assert ndcg == pytest.approx(expected, abs=1e-3)
 
@@ -118,6 +122,7 @@ class TestNDCG:
 
 
 # ── Average Precision ─────────────────────────────────────────────────────
+
 
 class TestAveragePrecision:
     def test_all_relevant_at_top(self):
@@ -136,6 +141,7 @@ class TestAveragePrecision:
 
 # ── MAP ───────────────────────────────────────────────────────────────────
 
+
 class TestMAP:
     def test_average_across_queries(self):
         # Q1: AP=1.0, Q2: AP=0.5 → MAP=0.75
@@ -147,6 +153,7 @@ class TestMAP:
 
 
 # ── Faithfulness ──────────────────────────────────────────────────────────
+
 
 class TestFaithfulness:
     def test_fully_supported_answer(self):
@@ -170,6 +177,7 @@ class TestFaithfulness:
 
 # ── Answer Relevancy ──────────────────────────────────────────────────────
 
+
 class TestAnswerRelevancy:
     def test_relevant_answer(self):
         score = answer_relevancy_score(
@@ -190,6 +198,7 @@ class TestAnswerRelevancy:
 
 
 # ── Context Precision ─────────────────────────────────────────────────────
+
 
 class TestContextPrecision:
     def test_all_chunks_useful(self):
@@ -212,6 +221,7 @@ class TestContextPrecision:
 
 
 # ── Context Recall ────────────────────────────────────────────────────────
+
 
 class TestContextRecall:
     def test_high_recall(self):

@@ -107,9 +107,7 @@ class ColBERTReranker(Reranker):
                 )
 
                 if response.status_code != 200:
-                    raise RerankerError(
-                        f"ColBERT API returned HTTP {response.status_code}"
-                    )
+                    raise RerankerError(f"ColBERT API returned HTTP {response.status_code}")
 
                 data = response.json()
                 scores = data.get("scores", data.get("results", []))
@@ -118,7 +116,9 @@ class ColBERTReranker(Reranker):
                 for idx, score in enumerate(scores):
                     if idx < len(candidates_to_rerank):
                         candidate = candidates_to_rerank[idx]
-                        score_val = score if isinstance(score, (int, float)) else score.get("score", 0.0)
+                        score_val = (
+                            score if isinstance(score, (int, float)) else score.get("score", 0.0)
+                        )
                         candidate.rerank_score = score_val
                         candidate.score = score_val
                         candidate.retrieval_source = f"{candidate.retrieval_source}_reranked"

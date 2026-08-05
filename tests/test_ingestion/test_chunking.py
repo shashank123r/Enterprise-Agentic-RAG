@@ -52,20 +52,13 @@ class TestHeadingAwareChunking:
 class TestMarkdownAwareChunking:
     @pytest.mark.asyncio
     async def test_markdown_code_blocks(self, chunker: ChunkingPipeline) -> None:
-        text = (
-            "Some text.\n\n```python\nprint('hello')\n```\n\nMore text."
-        )
+        text = "Some text.\n\n```python\nprint('hello')\n```\n\nMore text."
         chunks = await chunker.chunk_markdown(text)
         assert len(chunks) > 0
 
     @pytest.mark.asyncio
     async def test_markdown_lists(self, chunker: ChunkingPipeline) -> None:
-        text = (
-            "# List\n\n"
-            "- Item 1\n"
-            "- Item 2\n"
-            "- Item 3\n"
-        )
+        text = "# List\n\n" "- Item 1\n" "- Item 2\n" "- Item 3\n"
         chunks = await chunker.chunk_markdown(text)
         assert len(chunks) >= 1
 
@@ -84,9 +77,7 @@ class TestParentChildChunking:
     @pytest.mark.asyncio
     async def test_parent_child_relationship(self, chunker: ChunkingPipeline) -> None:
         text = "This is a test document. " * 200
-        chunks = await chunker.chunk_parent_child(
-            text, parent_size=500, child_size=100
-        )
+        chunks = await chunker.chunk_parent_child(text, parent_size=500, child_size=100)
         # Parent chunks should have child references
         assert len(chunks) > 0
 

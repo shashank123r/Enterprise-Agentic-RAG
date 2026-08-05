@@ -17,7 +17,9 @@ MAX_RETRIES = 3
 DLQ_KEY = "rag:dlq:ingestion"
 
 
-async def process_document(ctx: dict[str, Any], document_id: str, file_path: str, mime_type: str, user_id: str) -> dict[str, Any]:
+async def process_document(
+    ctx: dict[str, Any], document_id: str, file_path: str, mime_type: str, user_id: str
+) -> dict[str, Any]:
     """Process a document through the ingestion pipeline.
 
     This is the main ARQ task. Called by the worker when a job is dequeued.
@@ -133,8 +135,12 @@ async def retry_dead_letter(ctx: dict[str, Any]) -> int:
             document_id, file_path, mime_type, user_id = parts[0], parts[1], parts[2], parts[3]
             # Re-queue for processing
             from arq import create_pool
+
             pool = await redis
-            await redis.lpush(f"arq:queue", f"process_document({document_id}, {file_path}, {mime_type}, {user_id})")
+            await redis.lpush(
+                f"arq:queue",
+                f"process_document({document_id}, {file_path}, {mime_type}, {user_id})",
+            )
             count += 1
 
     if count:

@@ -49,9 +49,7 @@ class FilterBuilder:
                 exprs.append(f"{key} == {str(value).lower()}")
             elif isinstance(value, list):
                 if value:
-                    items = ", ".join(
-                        f'"{v}"' if isinstance(v, str) else str(v) for v in value
-                    )
+                    items = ", ".join(f'"{v}"' if isinstance(v, str) else str(v) for v in value)
                     exprs.append(f"{key} in [{items}]")
             elif isinstance(value, dict):
                 # Range filter: {"gte": 1, "lte": 10}
@@ -66,9 +64,7 @@ class FilterBuilder:
                     range_exprs.append(f"{key} < {value['lt']}")
                 exprs.extend(range_exprs)
             elif value is not None:
-                raise FilterError(
-                    f"Unsupported filter type for '{key}': {type(value).__name__}"
-                )
+                raise FilterError(f"Unsupported filter type for '{key}': {type(value).__name__}")
 
         return " && ".join(exprs) if exprs else ""
 

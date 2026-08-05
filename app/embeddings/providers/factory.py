@@ -42,8 +42,7 @@ async def create_embedding_provider() -> EmbeddingProvider:
         )
     else:
         raise ValueError(
-            f"Unknown embedding provider: {provider_type!r}. "
-            f"Supported: nvidia_nim"
+            f"Unknown embedding provider: {provider_type!r}. " f"Supported: nvidia_nim"
         )
 
     logger.info(

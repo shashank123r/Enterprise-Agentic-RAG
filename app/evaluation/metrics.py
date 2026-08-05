@@ -26,8 +26,8 @@ import math
 import re
 from typing import Sequence
 
-
 # ── Retrieval Metrics ──────────────────────────────────────────────────────
+
 
 def recall_at_k(
     retrieved: Sequence[str],
@@ -130,20 +130,14 @@ def ndcg_at_k(
         return 1.0 if item_id in relevant_set else 0.0
 
     # DCG
-    dcg = sum(
-        rel(item) / math.log2(rank + 1)
-        for rank, item in enumerate(retrieved[:k], 1)
-    )
+    dcg = sum(rel(item) / math.log2(rank + 1) for rank, item in enumerate(retrieved[:k], 1))
 
     # IDCG — ideal ranking
     ideal_grades = sorted(
         [rel(item) for item in relevant],
         reverse=True,
     )[:k]
-    idcg = sum(
-        grade / math.log2(rank + 1)
-        for rank, grade in enumerate(ideal_grades, 1)
-    )
+    idcg = sum(grade / math.log2(rank + 1) for rank, grade in enumerate(ideal_grades, 1))
 
     return dcg / idcg if idcg > 0 else 0.0
 
@@ -182,13 +176,13 @@ def mean_average_precision(
     """MAP: Mean Average Precision across multiple queries."""
     if not retrieved_lists:
         return 0.0
-    return sum(
-        average_precision(r, rel)
-        for r, rel in zip(retrieved_lists, relevant_lists)
-    ) / len(retrieved_lists)
+    return sum(average_precision(r, rel) for r, rel in zip(retrieved_lists, relevant_lists)) / len(
+        retrieved_lists
+    )
 
 
 # ── Generation / RAG Quality Metrics ──────────────────────────────────────
+
 
 def _tokenize(text: str) -> set[str]:
     """Simple whitespace+punctuation tokenizer for overlap computation."""

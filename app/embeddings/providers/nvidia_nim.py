@@ -188,17 +188,19 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
 
         # Split texts into batches
         batches = [
-            texts[i : i + actual_batch_size]
-            for i in range(0, len(texts), actual_batch_size)
+            texts[i : i + actual_batch_size] for i in range(0, len(texts), actual_batch_size)
         ]
 
         async def process_batch(
-            batch_texts: list[str], batch_start_idx: int,
+            batch_texts: list[str],
+            batch_start_idx: int,
         ) -> None:
             nonlocal all_vectors, all_texts, all_token_counts
             async with self._semaphore:
                 batch_result = await self._process_single_batch(
-                    batch_texts, batch_start_idx, actual_batch_size,
+                    batch_texts,
+                    batch_start_idx,
+                    actual_batch_size,
                 )
                 async with results_lock:
                     all_vectors.extend(batch_result["vectors"])
@@ -209,10 +211,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
                         errors.append(batch_result["error"])
 
         # Process batches with concurrency control and cancellation support
-        tasks = [
-            process_batch(batch, i * actual_batch_size)
-            for i, batch in enumerate(batches)
-        ]
+        tasks = [process_batch(batch, i * actual_batch_size) for i, batch in enumerate(batches)]
         try:
             await asyncio.gather(*tasks)
         except asyncio.CancelledError:
@@ -220,13 +219,12 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             for t in tasks:
                 t.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
-            get_metrics().increment("embedding.batch_cancelled",
-                tags={"model": self._model})
+            get_metrics().increment("embedding.batch_cancelled", tags={"model": self._model})
             raise  # Preserve cancellation semantics
 
         return BatchEmbeddingResult(
             vectors=all_vectors,
-            texts=all_texts or texts[:len(all_vectors)],
+            texts=all_texts or texts[: len(all_vectors)],
             token_counts=all_token_counts,
             model=self._model,
             failed_indices=sorted(set(failed_indices)),
@@ -263,7 +261,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
 
             return {
                 "vectors": vectors,
-                "texts": batch_texts[:len(vectors)],
+                "texts": batch_texts[: len(vectors)],
                 "token_counts": token_counts,
                 "failed_indices": [],
                 "error": None,
@@ -271,8 +269,9 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
 
         except EmbeddingError as e:
             failed = list(range(batch_start_idx, batch_start_idx + len(batch_texts)))
-            get_metrics().increment("embedding.batch_failed",
-                tags={"model": self._model, "error": e.code})
+            get_metrics().increment(
+                "embedding.batch_failed", tags={"model": self._model, "error": e.code}
+            )
             return {
                 "vectors": [],
                 "texts": [],
@@ -305,6 +304,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
 
         # Measure health check latency for reporting
         import time
+
         start = time.monotonic()
         healthy = await self.health_check()
         latency_ms = (time.monotonic() - start) * 1000
@@ -408,30 +408,22 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             )
         except httpx.TimeoutException:
             get_metrics().increment("embedding.timeout", tags={"model": self._model})
-            raise EmbeddingTimeout(
-                f"Embedding request timed out after {self._timeout}s"
-            )
+            raise EmbeddingTimeout(f"Embedding request timed out after {self._timeout}s")
         except httpx.ConnectError as e:
             get_metrics().increment("embedding.connection_error")
-            raise EmbeddingServiceUnavailable(
-                f"Cannot connect to NIM endpoint: {e}"
-            )
+            raise EmbeddingServiceUnavailable(f"Cannot connect to NIM endpoint: {e}")
         except httpx.HTTPError as e:
             get_metrics().increment("embedding.http_error")
             raise EmbeddingServiceUnavailable(f"HTTP error: {e}")
 
         # HTTP status handling
         if response.status_code == 401 or response.status_code == 403:
-            raise EmbeddingAuthError(
-                "Authentication failed — check NVIDIA NIM API key"
-            )
+            raise EmbeddingAuthError("Authentication failed — check NVIDIA NIM API key")
         if response.status_code == 429:
             get_metrics().increment("embedding.rate_limited")
             raise EmbeddingError("Rate limited by NVIDIA NIM", code="rate_limited")
         if response.status_code >= 500:
-            raise EmbeddingServiceUnavailable(
-                f"NIM server error (HTTP {response.status_code})"
-            )
+            raise EmbeddingServiceUnavailable(f"NIM server error (HTTP {response.status_code})")
         if response.status_code >= 400:
             body = ""
             try:
@@ -477,8 +469,9 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             indexed = sorted(raw_data, key=lambda x: x.get("index", 0))
             vectors = [list(item.get("embedding") or item.get("vector", [])) for item in indexed]
 
-        get_metrics().increment("embedding.api_calls",
-            tags={"model": self._model, "input_type": input_type})
+        get_metrics().increment(
+            "embedding.api_calls", tags={"model": self._model, "input_type": input_type}
+        )
         return vectors, token_counts
 
     # ── Retry with exponential backoff ─────────────────────
@@ -508,35 +501,43 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             except EmbeddingTimeout as e:
                 last_exception = e
                 if attempt > self._max_retries:
-                    get_metrics().increment("embedding.retry_exhausted",
-                        tags={"reason": "timeout"})
+                    get_metrics().increment("embedding.retry_exhausted", tags={"reason": "timeout"})
                     raise
                 wait = self._backoff ** (attempt - 1)
                 jitter = random.uniform(0, wait * 0.2)  # 0-20% random jitter
                 total_wait = min(wait + jitter, 30.0)
                 logger.warning(
                     "Embedding timeout — retrying",
-                    attempt=attempt, max_retries=self._max_retries,
-                    wait_seconds=round(total_wait, 2), error=str(e),
+                    attempt=attempt,
+                    max_retries=self._max_retries,
+                    wait_seconds=round(total_wait, 2),
+                    error=str(e),
                 )
-                get_metrics().increment("embedding.retry", tags={"reason": "timeout", "attempt": str(attempt)})
+                get_metrics().increment(
+                    "embedding.retry", tags={"reason": "timeout", "attempt": str(attempt)}
+                )
                 await asyncio.sleep(total_wait)
 
             except EmbeddingServiceUnavailable as e:
                 last_exception = e
                 if attempt > self._max_retries:
-                    get_metrics().increment("embedding.retry_exhausted",
-                        tags={"reason": "service_unavailable"})
+                    get_metrics().increment(
+                        "embedding.retry_exhausted", tags={"reason": "service_unavailable"}
+                    )
                     raise
                 wait = self._backoff ** (attempt - 1)
                 jitter = random.uniform(0, wait * 0.2)
                 total_wait = min(wait + jitter, 30.0)
                 logger.warning(
                     "Embedding service unavailable — retrying",
-                    attempt=attempt, max_retries=self._max_retries,
-                    wait_seconds=round(total_wait, 2), error=str(e),
+                    attempt=attempt,
+                    max_retries=self._max_retries,
+                    wait_seconds=round(total_wait, 2),
+                    error=str(e),
                 )
-                get_metrics().increment("embedding.retry", tags={"reason": "unavailable", "attempt": str(attempt)})
+                get_metrics().increment(
+                    "embedding.retry", tags={"reason": "unavailable", "attempt": str(attempt)}
+                )
                 await asyncio.sleep(total_wait)
 
             except EmbeddingError as e:
@@ -544,18 +545,22 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
                     # Rate limited — retry with backoff
                     last_exception = e
                     if attempt > self._max_retries:
-                        get_metrics().increment("embedding.retry_exhausted",
-                            tags={"reason": "rate_limited"})
+                        get_metrics().increment(
+                            "embedding.retry_exhausted", tags={"reason": "rate_limited"}
+                        )
                         raise
                     wait = self._backoff ** (attempt - 1) * 2  # Double wait for rate limits
                     jitter = random.uniform(0, wait * 0.2)
                     total_wait = min(wait + jitter, 60.0)  # Higher cap for rate limits
                     logger.warning(
                         "Rate limited — retrying",
-                        attempt=attempt, max_retries=self._max_retries,
+                        attempt=attempt,
+                        max_retries=self._max_retries,
                         wait_seconds=round(total_wait, 2),
                     )
-                    get_metrics().increment("embedding.retry", tags={"reason": "rate_limited", "attempt": str(attempt)})
+                    get_metrics().increment(
+                        "embedding.retry", tags={"reason": "rate_limited", "attempt": str(attempt)}
+                    )
                     await asyncio.sleep(total_wait)
                 else:
                     # Non-retryable embedding error (validation, format, etc.)
@@ -742,6 +747,5 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
                     index=i,
                     vector_preview=f"{vec[:3]}... (dim={len(vec)})",
                 )
-                get_metrics().increment("embedding.duplicate_vector",
-                    tags={"model": self._model})
+                get_metrics().increment("embedding.duplicate_vector", tags={"model": self._model})
             seen.add(rounded)

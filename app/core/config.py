@@ -195,8 +195,16 @@ class Settings(BaseSettings):
     STORAGE_ROOT: str = "uploads"
     STORAGE_TEMP_DIR: str = "uploads/temp"
     STORAGE_ALLOWED_EXTENSIONS: list[str] = [
-        ".pdf", ".docx", ".pptx", ".xlsx", ".csv",
-        ".md", ".html", ".htm", ".json", ".txt",
+        ".pdf",
+        ".docx",
+        ".pptx",
+        ".xlsx",
+        ".csv",
+        ".md",
+        ".html",
+        ".htm",
+        ".json",
+        ".txt",
     ]
 
     # ── Evaluation ─────────────────────────────
@@ -222,13 +230,9 @@ class Settings(BaseSettings):
         """Ensure secrets are not defaults in production."""
         if self.ENVIRONMENT == Environment.PRODUCTION:
             if self.SECRET_KEY == "change-me":
-                raise ValueError(
-                    "SECRET_KEY must be changed from default in production"
-                )
+                raise ValueError("SECRET_KEY must be changed from default in production")
             if self.JWT_SECRET_KEY == "change-me":
-                raise ValueError(
-                    "JWT_SECRET_KEY must be changed from default in production"
-                )
+                raise ValueError("JWT_SECRET_KEY must be changed from default in production")
         return self
 
 

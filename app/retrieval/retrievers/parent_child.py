@@ -107,7 +107,8 @@ class ParentChildRetriever(Retriever):
                     text=combined_text,
                     score=doc_score,
                     page_number=first.page_number,
-                    section_title=first.section_title or f"Document with {len(top_chunks)} matching chunks",
+                    section_title=first.section_title
+                    or f"Document with {len(top_chunks)} matching chunks",
                     chunk_index=first.chunk_index,
                     language=first.language,
                     metadata={

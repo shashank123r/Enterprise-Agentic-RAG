@@ -56,8 +56,7 @@ async def create_vector_store() -> VectorStore:
 
     else:
         raise VectorStoreError(
-            f"Unknown vector store provider: '{provider}'. "
-            f"Supported: milvus"
+            f"Unknown vector store provider: '{provider}'. " f"Supported: milvus"
         )
 
 

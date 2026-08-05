@@ -64,10 +64,10 @@ class CitationMerger:
             )
 
             source = (
-                chunk.metadata.get("source")
-                or chunk.metadata.get("filename")
-                or ""
-            ) if isinstance(chunk.metadata, dict) else ""
+                (chunk.metadata.get("source") or chunk.metadata.get("filename") or "")
+                if isinstance(chunk.metadata, dict)
+                else ""
+            )
 
             citations.append(
                 CitationInfo(
@@ -134,7 +134,6 @@ class CitationMerger:
             location_str = f" ({', '.join(location)})" if location else ""
 
             parts.append(
-                f"[{c.index}] {c.document_title}{location_str}: "
-                f"\"\"\"{c.text_preview}\"\"\""
+                f"[{c.index}] {c.document_title}{location_str}: " f'"""{c.text_preview}"""'
             )
         return "\n".join(parts)

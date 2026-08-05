@@ -1,6 +1,10 @@
 """RAG exception hierarchy."""
 
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
 
 from app.core.exceptions import AppException
 
@@ -22,7 +26,9 @@ class RAGLLMUnavailable(RAGError):
     """LLM endpoint is unreachable."""
 
     def __init__(self, message: str = "LLM service unavailable") -> None:
-        super().__init__(message=message, code="llm_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="llm_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class RAGLLMError(RAGError):

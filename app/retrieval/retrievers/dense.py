@@ -89,18 +89,30 @@ class DenseRetriever(Retriever):
                 # Step 4: Convert to candidates
                 candidates = []
                 for r in results:
-                    candidates.append(RetrievalCandidate(
-                        chunk_id=r.chunk_id,
-                        document_id=r.document_id,
-                        text=r.text,
-                        score=r.score,
-                        page_number=r.metadata.get("page_number") if isinstance(r.metadata, dict) else None,
-                        section_title=r.metadata.get("section_title") if isinstance(r.metadata, dict) else None,
-                        chunk_index=r.chunk_index,
-                        language=r.metadata.get("language") if isinstance(r.metadata, dict) else None,
-                        metadata=r.metadata if isinstance(r.metadata, dict) else {},
-                        retrieval_source="dense",
-                    ))
+                    candidates.append(
+                        RetrievalCandidate(
+                            chunk_id=r.chunk_id,
+                            document_id=r.document_id,
+                            text=r.text,
+                            score=r.score,
+                            page_number=(
+                                r.metadata.get("page_number")
+                                if isinstance(r.metadata, dict)
+                                else None
+                            ),
+                            section_title=(
+                                r.metadata.get("section_title")
+                                if isinstance(r.metadata, dict)
+                                else None
+                            ),
+                            chunk_index=r.chunk_index,
+                            language=(
+                                r.metadata.get("language") if isinstance(r.metadata, dict) else None
+                            ),
+                            metadata=r.metadata if isinstance(r.metadata, dict) else {},
+                            retrieval_source="dense",
+                        )
+                    )
 
                 logger.debug(
                     "Dense retrieval complete",

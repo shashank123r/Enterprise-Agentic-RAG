@@ -34,9 +34,7 @@ _ABBREV = frozenset(
     "mon tue wed thu fri sat sun".split()
 )
 
-_SENTENCE_SPLIT_RE = re.compile(
-    r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=[.!?])\s+(?=[A-Z\"‘“¿¡])"
-)
+_SENTENCE_SPLIT_RE = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=[.!?])\s+(?=[A-Z\"‘“¿¡])")
 
 
 def _split_sentences(text: str) -> list[str]:
@@ -66,6 +64,7 @@ def _split_sentences(text: str) -> list[str]:
 
 
 # ── ChunkResult ────────────────────────────────────────────────────────────
+
 
 class ChunkResult:
     """Result of a single chunk operation with full metadata."""
@@ -110,6 +109,7 @@ class ChunkResult:
 
 # ── Base strategy ──────────────────────────────────────────────────────────
 
+
 class ChunkingStrategy:
     def __init__(
         self,
@@ -126,6 +126,7 @@ class ChunkingStrategy:
 
 
 # ── SemanticChunker ────────────────────────────────────────────────────────
+
 
 class SemanticChunker(ChunkingStrategy):
     """Chunks at sentence boundaries with adaptive overlap.
@@ -182,12 +183,13 @@ class SemanticChunker(ChunkingStrategy):
 
 # ── HeadingAwareChunker ────────────────────────────────────────────────────
 
+
 class HeadingAwareChunker(ChunkingStrategy):
     """Splits by headings, tracking full section hierarchy."""
 
     _HEADING_RE = re.compile(
-        r"^(#{1,6})\s+(.+)$"             # Markdown headings
-        r"|^(.+)\n([=-]{3,})$",           # Setext headings
+        r"^(#{1,6})\s+(.+)$"  # Markdown headings
+        r"|^(.+)\n([=-]{3,})$",  # Setext headings
         re.MULTILINE,
     )
 
@@ -204,7 +206,9 @@ class HeadingAwareChunker(ChunkingStrategy):
                 hierarchy = hierarchy[: level - 1] + [heading or ""]
 
             if len(body) > self.max_chunk_size:
-                sub = SemanticChunker(max_chunk_size=self.max_chunk_size, min_chunk_size=self.min_chunk_size)
+                sub = SemanticChunker(
+                    max_chunk_size=self.max_chunk_size, min_chunk_size=self.min_chunk_size
+                )
                 for sub_chunk in await sub.chunk(body, metadata):
                     sub_chunk.section_title = heading
                     sub_chunk.section_hierarchy = list(hierarchy)
@@ -212,14 +216,16 @@ class HeadingAwareChunker(ChunkingStrategy):
                     sub_chunk.chunk_index = len(chunks)
                     chunks.append(sub_chunk)
             else:
-                chunks.append(ChunkResult(
-                    content=body.strip(),
-                    chunk_index=len(chunks),
-                    chunk_type="section",
-                    section_title=heading,
-                    section_hierarchy=list(hierarchy),
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content=body.strip(),
+                        chunk_index=len(chunks),
+                        chunk_type="section",
+                        section_title=heading,
+                        section_hierarchy=list(hierarchy),
+                        metadata=metadata or {},
+                    )
+                )
 
         return chunks
 
@@ -262,6 +268,7 @@ class HeadingAwareChunker(ChunkingStrategy):
 
 # ── MarkdownAwareChunker ───────────────────────────────────────────────────
 
+
 class MarkdownAwareChunker(ChunkingStrategy):
     """Chunks markdown text at heading boundaries, keeping code blocks intact."""
 
@@ -286,13 +293,15 @@ class MarkdownAwareChunker(ChunkingStrategy):
             if heading_match and not in_code_block:
                 # Flush existing content
                 if current and current_size >= self.min_chunk_size:
-                    chunks.append(ChunkResult(
-                        content="\n".join(current),
-                        chunk_index=len(chunks),
-                        chunk_type="markdown_section",
-                        section_title=current_heading,
-                        metadata=metadata or {},
-                    ))
+                    chunks.append(
+                        ChunkResult(
+                            content="\n".join(current),
+                            chunk_index=len(chunks),
+                            chunk_type="markdown_section",
+                            section_title=current_heading,
+                            metadata=metadata or {},
+                        )
+                    )
                     current = []
                     current_size = 0
                 current_heading = heading_match.group(2).strip()
@@ -301,18 +310,21 @@ class MarkdownAwareChunker(ChunkingStrategy):
             current_size += len(line) + 1
 
         if current:
-            chunks.append(ChunkResult(
-                content="\n".join(current),
-                chunk_index=len(chunks),
-                chunk_type="markdown_section",
-                section_title=current_heading,
-                metadata=metadata or {},
-            ))
+            chunks.append(
+                ChunkResult(
+                    content="\n".join(current),
+                    chunk_index=len(chunks),
+                    chunk_type="markdown_section",
+                    section_title=current_heading,
+                    metadata=metadata or {},
+                )
+            )
 
         return chunks
 
 
 # ── TableAwareChunker ──────────────────────────────────────────────────────
+
 
 class TableAwareChunker(ChunkingStrategy):
     """Chunks text, preserving tables as atomic units."""
@@ -329,23 +341,27 @@ class TableAwareChunker(ChunkingStrategy):
         def flush_text() -> None:
             content = "\n".join(text_buf).strip()
             if content and len(content) >= self.min_chunk_size:
-                chunks.append(ChunkResult(
-                    content=content,
-                    chunk_index=len(chunks),
-                    chunk_type="text",
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content=content,
+                        chunk_index=len(chunks),
+                        chunk_type="text",
+                        metadata=metadata or {},
+                    )
+                )
             text_buf.clear()
 
         def flush_table() -> None:
             content = "\n".join(table_buf).strip()
             if content:
-                chunks.append(ChunkResult(
-                    content=content,
-                    chunk_index=len(chunks),
-                    chunk_type="table",
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content=content,
+                        chunk_index=len(chunks),
+                        chunk_type="table",
+                        metadata=metadata or {},
+                    )
+                )
             table_buf.clear()
 
         for line in lines:
@@ -371,6 +387,7 @@ class TableAwareChunker(ChunkingStrategy):
 
 # ── CodeAwareChunker ───────────────────────────────────────────────────────
 
+
 class CodeAwareChunker(ChunkingStrategy):
     """Chunks code files at function/class boundaries.
 
@@ -392,10 +409,17 @@ class CodeAwareChunker(ChunkingStrategy):
             r"^(export\s+)?(async\s+)?function\s+\w+|^(export\s+)?(const|let|var)\s+\w+|^(export\s+)?(abstract\s+)?class\s+\w+|^(export\s+)?interface\s+\w+|^(export\s+)?type\s+\w+\s*=",
             re.MULTILINE,
         ),
-        "sql": re.compile(r"^(CREATE|ALTER|DROP|INSERT|SELECT|UPDATE|DELETE|WITH)\b", re.MULTILINE | re.IGNORECASE),
-        "java": re.compile(r"^(public|private|protected|static)?\s*(class|interface|enum|void|[A-Z]\w+)\s+\w+", re.MULTILINE),
+        "sql": re.compile(
+            r"^(CREATE|ALTER|DROP|INSERT|SELECT|UPDATE|DELETE|WITH)\b", re.MULTILINE | re.IGNORECASE
+        ),
+        "java": re.compile(
+            r"^(public|private|protected|static)?\s*(class|interface|enum|void|[A-Z]\w+)\s+\w+",
+            re.MULTILINE,
+        ),
         "go": re.compile(r"^func\s+(\(\w+\s+\*?\w+\)\s+)?\w+\s*\(", re.MULTILINE),
-        "rust": re.compile(r"^(pub\s+)?(async\s+)?fn\s+\w+|^(pub\s+)?(struct|enum|trait|impl)\s+\w+", re.MULTILINE),
+        "rust": re.compile(
+            r"^(pub\s+)?(async\s+)?fn\s+\w+|^(pub\s+)?(struct|enum|trait|impl)\s+\w+", re.MULTILINE
+        ),
     }
 
     def __init__(self, *args: Any, detected_language: str | None = None, **kwargs: Any) -> None:
@@ -436,13 +460,15 @@ class CodeAwareChunker(ChunkingStrategy):
                     sub.chunk_index = len(chunks)
                     chunks.append(sub)
             else:
-                chunks.append(ChunkResult(
-                    content=segment,
-                    chunk_index=len(chunks),
-                    chunk_type="code",
-                    code_language=lang,
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content=segment,
+                        chunk_index=len(chunks),
+                        chunk_type="code",
+                        code_language=lang,
+                        metadata=metadata or {},
+                    )
+                )
         return chunks
 
     def _chunk_by_blank_lines(
@@ -456,26 +482,30 @@ class CodeAwareChunker(ChunkingStrategy):
 
         for para in paragraphs:
             if current_size + len(para) > self.max_chunk_size and current:
-                chunks.append(ChunkResult(
-                    content="\n\n".join(current),
-                    chunk_index=len(chunks),
-                    chunk_type="code",
-                    code_language=lang or None,
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content="\n\n".join(current),
+                        chunk_index=len(chunks),
+                        chunk_type="code",
+                        code_language=lang or None,
+                        metadata=metadata or {},
+                    )
+                )
                 current = []
                 current_size = 0
             current.append(para)
             current_size += len(para)
 
         if current:
-            chunks.append(ChunkResult(
-                content="\n\n".join(current),
-                chunk_index=len(chunks),
-                chunk_type="code",
-                code_language=lang or None,
-                metadata=metadata or {},
-            ))
+            chunks.append(
+                ChunkResult(
+                    content="\n\n".join(current),
+                    chunk_index=len(chunks),
+                    chunk_type="code",
+                    code_language=lang or None,
+                    metadata=metadata or {},
+                )
+            )
         return chunks
 
     @staticmethod
@@ -501,6 +531,7 @@ class CodeAwareChunker(ChunkingStrategy):
 
 
 # ── OCRChunker ─────────────────────────────────────────────────────────────
+
 
 class OCRChunker(ChunkingStrategy):
     """Noise-tolerant chunker for OCR-extracted text.
@@ -564,6 +595,7 @@ class OCRChunker(ChunkingStrategy):
 
 # ── AdaptiveChunker ────────────────────────────────────────────────────────
 
+
 class AdaptiveChunker(ChunkingStrategy):
     """Adjusts chunk size based on content density.
 
@@ -572,11 +604,11 @@ class AdaptiveChunker(ChunkingStrategy):
     """
 
     _DENSE_RE = [
-        re.compile(r"^\s{4,}\S"),        # Indented code
-        re.compile(r"^\|.+\|$"),         # Table rows
-        re.compile(r"^\d+[.\)]\s+\S"),   # Numbered lists
-        re.compile(r"^[-*]\s+\S"),        # Bullet lists
-        re.compile(r"^```"),              # Code fence
+        re.compile(r"^\s{4,}\S"),  # Indented code
+        re.compile(r"^\|.+\|$"),  # Table rows
+        re.compile(r"^\d+[.\)]\s+\S"),  # Numbered lists
+        re.compile(r"^[-*]\s+\S"),  # Bullet lists
+        re.compile(r"^```"),  # Code fence
     ]
 
     async def chunk(self, text: str, metadata: dict[str, Any] | None = None) -> list[ChunkResult]:
@@ -590,12 +622,14 @@ class AdaptiveChunker(ChunkingStrategy):
             adaptive_max = int(self.max_chunk_size * density)
 
             if current_size + len(para) > adaptive_max and current:
-                chunks.append(ChunkResult(
-                    content="\n\n".join(current),
-                    chunk_index=len(chunks),
-                    chunk_type="adaptive",
-                    metadata=metadata or {},
-                ))
+                chunks.append(
+                    ChunkResult(
+                        content="\n\n".join(current),
+                        chunk_index=len(chunks),
+                        chunk_type="adaptive",
+                        metadata=metadata or {},
+                    )
+                )
                 current = []
                 current_size = 0
 
@@ -603,12 +637,14 @@ class AdaptiveChunker(ChunkingStrategy):
             current_size += len(para)
 
         if current:
-            chunks.append(ChunkResult(
-                content="\n\n".join(current),
-                chunk_index=len(chunks),
-                chunk_type="adaptive",
-                metadata=metadata or {},
-            ))
+            chunks.append(
+                ChunkResult(
+                    content="\n\n".join(current),
+                    chunk_index=len(chunks),
+                    chunk_type="adaptive",
+                    metadata=metadata or {},
+                )
+            )
 
         return chunks
 
@@ -622,6 +658,7 @@ class AdaptiveChunker(ChunkingStrategy):
 
 
 # ── ParentChildChunker ─────────────────────────────────────────────────────
+
 
 class ParentChildChunker(ChunkingStrategy):
     """Creates hierarchical parent-child chunks.
@@ -669,6 +706,7 @@ class ParentChildChunker(ChunkingStrategy):
 
 
 # ── ChunkingPipeline ───────────────────────────────────────────────────────
+
 
 class ChunkingPipeline:
     """Orchestrates multiple chunking strategies with MIME-type-aware auto-selection."""
@@ -724,7 +762,9 @@ class ChunkingPipeline:
         chunks = await chunker.chunk(text, metadata)
 
         # Post-process: remove empty chunks, re-index
-        valid = [c for c in chunks if c.content.strip() and len(c.content) >= chunker.min_chunk_size]
+        valid = [
+            c for c in chunks if c.content.strip() and len(c.content) >= chunker.min_chunk_size
+        ]
         for i, c in enumerate(valid):
             c.chunk_index = i
 
@@ -760,7 +800,11 @@ class ChunkingPipeline:
         code_signals = [
             bool(re.search(r"^\s*(def|class|import|from)\s+\w+", sample, re.MULTILINE)),
             bool(re.search(r"^\s*(function|const|let|var)\s+\w+", sample, re.MULTILINE)),
-            bool(re.search(r"^\s*(SELECT|CREATE|INSERT|UPDATE)\s+\w+", sample, re.MULTILINE | re.IGNORECASE)),
+            bool(
+                re.search(
+                    r"^\s*(SELECT|CREATE|INSERT|UPDATE)\s+\w+", sample, re.MULTILINE | re.IGNORECASE
+                )
+            ),
             sample.count("{") > 5 and sample.count("}") > 5,
         ]
         return sum(code_signals) >= 2

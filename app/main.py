@@ -64,7 +64,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await init_db()
         logger.info("Database connection established")
     except Exception as e:
-        logger.warning("Database initialization failed (non-fatal — running in degraded mode)", exc_info=e)
+        logger.warning(
+            "Database initialization failed (non-fatal — running in degraded mode)", exc_info=e
+        )
 
     # Initialize Redis
     try:
@@ -84,6 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize embedding provider
     try:
         from app.embeddings.providers.factory import create_embedding_provider
+
         embedding_provider = await create_embedding_provider()
         logger.info("Embedding provider initialized", provider=settings.EMBEDDING_PROVIDER)
     except Exception as e:
@@ -93,8 +96,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize vector store
     try:
         from app.vector_stores.factory import create_vector_store
+
         vector_store = await create_vector_store()
         from app.vector_stores.factory import get_vector_store as _get_vs
+
         async for vs in _get_vs():
             vector_store = vs
             break
@@ -105,11 +110,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         from app.vector_stores.collection_manager import CollectionManager
         from app.vector_stores.factory import get_collection_manager as _get_cm
+
         collection_manager = None
         async for cm in _get_cm():
             collection_manager = cm
             break
         from app.embeddings.services.indexing_service import init_indexing_service
+
         await init_indexing_service(
             embedding_provider=embedding_provider,
             vector_store=vector_store,
@@ -155,8 +162,14 @@ def create_app() -> FastAPI:
         multi-agent orchestration, knowledge graphs, and hybrid search.
         """,
         docs_url=f"{settings.API_V1_PREFIX}/docs" if settings.ENVIRONMENT != "production" else None,
-        redoc_url=f"{settings.API_V1_PREFIX}/redoc" if settings.ENVIRONMENT != "production" else None,
-        openapi_url=f"{settings.API_V1_PREFIX}/openapi.json" if settings.ENVIRONMENT != "production" else None,
+        redoc_url=(
+            f"{settings.API_V1_PREFIX}/redoc" if settings.ENVIRONMENT != "production" else None
+        ),
+        openapi_url=(
+            f"{settings.API_V1_PREFIX}/openapi.json"
+            if settings.ENVIRONMENT != "production"
+            else None
+        ),
         default_response_class=ORJSONResponse,
         lifespan=lifespan,
         swagger_ui_parameters={
@@ -190,6 +203,7 @@ def create_app() -> FastAPI:
         request: Request, exc: StorageFileNotFound
     ) -> ORJSONResponse:
         from fastapi import status
+
         return ORJSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={
@@ -205,6 +219,7 @@ def create_app() -> FastAPI:
         request: Request, exc: StoragePermissionDenied
     ) -> ORJSONResponse:
         from fastapi import status
+
         return ORJSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
@@ -216,10 +231,9 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(StorageQuotaExceeded)
-    async def storage_quota_handler(
-        request: Request, exc: StorageQuotaExceeded
-    ) -> ORJSONResponse:
+    async def storage_quota_handler(request: Request, exc: StorageQuotaExceeded) -> ORJSONResponse:
         from fastapi import status
+
         return ORJSONResponse(
             status_code=status.HTTP_507_INSUFFICIENT_STORAGE,
             content={
@@ -235,6 +249,7 @@ def create_app() -> FastAPI:
         request: Request, exc: StorageUnavailable
     ) -> ORJSONResponse:
         from fastapi import status
+
         return ORJSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -246,10 +261,9 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(StorageError)
-    async def storage_error_handler(
-        request: Request, exc: StorageError
-    ) -> ORJSONResponse:
+    async def storage_error_handler(request: Request, exc: StorageError) -> ORJSONResponse:
         from fastapi import status
+
         return ORJSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={

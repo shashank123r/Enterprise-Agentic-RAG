@@ -25,7 +25,8 @@ class DocumentResponse(BaseModel):
     chunk_count: int = Field(0, description="Number of chunks")
     ocr_used: bool = Field(False, description="Whether OCR was applied")
     metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Custom document metadata",
+        default_factory=dict,
+        description="Custom document metadata",
         validation_alias="custom_metadata",
     )
     current_version: int = Field(1, description="Current version number")
@@ -106,7 +107,8 @@ class ChunkResponse(BaseModel):
     token_count: int = Field(0, description="Token count")
     char_count: int = Field(0, description="Character count")
     metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Chunk metadata",
+        default_factory=dict,
+        description="Chunk metadata",
         validation_alias="custom_metadata",
     )
 

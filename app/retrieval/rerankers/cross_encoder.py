@@ -153,10 +153,15 @@ class CrossEncoderReranker(Reranker):
                 logger.warning("Reranking request timed out — returning unreranked results")
                 return candidates[:top_k]
             except httpx.ConnectError as e:
-                logger.warning("Cannot connect to reranking endpoint — returning unreranked results", error=str(e))
+                logger.warning(
+                    "Cannot connect to reranking endpoint — returning unreranked results",
+                    error=str(e),
+                )
                 return candidates[:top_k]
             except Exception as e:
-                logger.warning("Cross-encoder reranking failed — returning unreranked results", error=str(e))
+                logger.warning(
+                    "Cross-encoder reranking failed — returning unreranked results", error=str(e)
+                )
                 return candidates[:top_k]
 
     async def rerank_batch(
@@ -168,6 +173,7 @@ class CrossEncoderReranker(Reranker):
     ) -> list[list[RetrievalCandidate]]:
         """Rerank multiple query-candidate pairs concurrently."""
         import asyncio
+
         tasks = [
             self.rerank(query, candidates, top_k=top_k, **kwargs)
             for query, candidates in zip(queries, candidates_batch)

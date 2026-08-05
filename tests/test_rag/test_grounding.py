@@ -41,7 +41,9 @@ class TestGroundingValidator:
         validator = GroundingValidator()
         chunks = [_make_chunk("c1", "Revenue grew significantly.")]
         # Long answer with no citation
-        answer = "The revenue grew significantly and the company expanded into new markets last year."
+        answer = (
+            "The revenue grew significantly and the company expanded into new markets last year."
+        )
         result = await validator.validate(answer, chunks, "How did revenue change?")
         # Should flag missing citations
         assert any("citation" in issue.lower() for issue in result["issues"])
@@ -80,12 +82,14 @@ class TestGroundingValidator:
     @pytest.mark.asyncio
     async def test_extract_citations_range(self):
         from app.rag.grounding import GroundingValidator
+
         v = GroundingValidator()
         assert v._extract_citations("See [1-3] and [5].") == [1, 2, 3, 5]
 
     @pytest.mark.asyncio
     async def test_extract_citations_individual(self):
         from app.rag.grounding import GroundingValidator
+
         v = GroundingValidator()
         assert v._extract_citations("See [1] and [2].") == [1, 2]
 

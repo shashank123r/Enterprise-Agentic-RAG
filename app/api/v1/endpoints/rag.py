@@ -134,11 +134,13 @@ async def validate_answer(
 
     # Grounding validation
     from app.rag.grounding import GroundingValidator
+
     grounding_validator = GroundingValidator()
 
     # Convert RAGChunk list to RetrievedChunk-like structure
     # for the grounding validator
     from app.retrieval.schemas import RetrievedChunk
+
     chunks = [
         RetrievedChunk(
             chunk_id=c.chunk_id,
@@ -185,7 +187,9 @@ async def health(
     # Check LLM endpoint
     llm_ok = False
     try:
-        response = await orchestrator.client.get(orchestrator._llm_api_url.replace("/chat/completions", "/health"))
+        response = await orchestrator.client.get(
+            orchestrator._llm_api_url.replace("/chat/completions", "/health")
+        )
         llm_ok = response.status_code == 200
     except Exception:
         llm_ok = False

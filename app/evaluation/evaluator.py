@@ -109,15 +109,19 @@ class RAGEvaluator:
                     }
                 generation_result = await self._eval_generation(
                     query,
-                    retrieved_chunk_ids=retrieval_result.retrieved_chunk_ids if retrieval_result else [],
+                    retrieved_chunk_ids=(
+                        retrieval_result.retrieved_chunk_ids if retrieval_result else []
+                    ),
                     chunk_texts=chunk_texts,
                 )
 
-            results.append(EvaluationResult(
-                golden=query,
-                retrieval=retrieval_result,
-                generation=generation_result,
-            ))
+            results.append(
+                EvaluationResult(
+                    golden=query,
+                    retrieval=retrieval_result,
+                    generation=generation_result,
+                )
+            )
 
         return self._aggregate(results, ks=ks, run_metadata=run_metadata or {})
 
@@ -149,7 +153,11 @@ class RAGEvaluator:
         p_at_k = {k: precision_at_k(retrieved_ids, relevant, k) for k in ks}
         n_at_k = {k: ndcg_at_k(retrieved_ids, relevant, k) for k in ks}
         ap = average_precision(retrieved_ids, relevant)
-        rr = 1.0 / (retrieved_ids.index(relevant[0]) + 1) if relevant and relevant[0] in retrieved_ids else 0.0
+        rr = (
+            1.0 / (retrieved_ids.index(relevant[0]) + 1)
+            if relevant and relevant[0] in retrieved_ids
+            else 0.0
+        )
 
         return RetrievalEvalResult(
             query_id=query.query_id,
@@ -192,6 +200,7 @@ class RAGEvaluator:
 
             # Grounding confidence from the response validator
             from app.retrieval.schemas import RetrievedChunk
+
             chunks_for_grounding = [
                 RetrievedChunk(
                     chunk_id=cid,
@@ -223,11 +232,11 @@ class RAGEvaluator:
         # Citation coverage
         from app.rag.grounding import GroundingValidator
         from app.rag.grounding import _split_sentences
+
         sentences = _split_sentences(generated)
         import re
-        citations_per_sentence = [
-            1 if re.search(r"\[\d+\]", s) else 0 for s in sentences
-        ]
+
+        citations_per_sentence = [1 if re.search(r"\[\d+\]", s) else 0 for s in sentences]
         citation_cov = sum(citations_per_sentence) / max(len(sentences), 1)
 
         return GenerationEvalResult(
@@ -301,9 +310,7 @@ class RAGEvaluator:
             report.mean_generation_latency_ms = round(
                 sum(r.latency_ms for r in gen_results) / len(gen_results), 2
             )
-            all_tokens = sum(
-                r.token_usage.get("total_tokens", 0) for r in gen_results
-            )
+            all_tokens = sum(r.token_usage.get("total_tokens", 0) for r in gen_results)
             report.mean_tokens_per_query = round(all_tokens / len(gen_results), 1)
 
         return report

@@ -61,6 +61,7 @@ class BM25IndexManager:
             # Load all chunks across all documents
             # Use a list of all documents
             from app.ingestion.repository import DocumentRepository
+
             doc_repo = DocumentRepository(db)
             docs, total = await doc_repo.list_documents(page=1, size=10000, include_deleted=False)
 
@@ -71,17 +72,19 @@ class BM25IndexManager:
                     meta = dict(c.custom_metadata) if c.custom_metadata else {}
                     meta["document_title"] = doc.title or doc.original_filename
                     meta["source"] = doc.original_filename
-                    all_chunks.append({
-                        "chunk_id": c.id,
-                        "document_id": c.document_id,
-                        "text": c.content,
-                        "metadata": meta,
-                        "checksum": c.content_checksum,
-                        "chunk_index": c.chunk_index,
-                        "page_number": c.page_number,
-                        "section_title": c.section_title,
-                        "language": c.language or "unknown",
-                    })
+                    all_chunks.append(
+                        {
+                            "chunk_id": c.id,
+                            "document_id": c.document_id,
+                            "text": c.content,
+                            "metadata": meta,
+                            "checksum": c.content_checksum,
+                            "chunk_index": c.chunk_index,
+                            "page_number": c.page_number,
+                            "section_title": c.section_title,
+                            "language": c.language or "unknown",
+                        }
+                    )
 
             if not all_chunks:
                 logger.warning("No chunks found to build BM25 index")
@@ -101,8 +104,14 @@ class BM25IndexManager:
 
             return {
                 "total_docs": self._retriever.index_size,
-                "unique_tokens": len(self._retriever._doc_freqs) if hasattr(self._retriever, '_doc_freqs') else 0,
-                "avg_doc_length": round(self._retriever._avg_doc_length, 1) if hasattr(self._retriever, '_avg_doc_length') else 0.0,
+                "unique_tokens": (
+                    len(self._retriever._doc_freqs) if hasattr(self._retriever, "_doc_freqs") else 0
+                ),
+                "avg_doc_length": (
+                    round(self._retriever._avg_doc_length, 1)
+                    if hasattr(self._retriever, "_avg_doc_length")
+                    else 0.0
+                ),
                 "total_chunks_loaded": self._total_chunks_loaded,
             }
 
@@ -153,7 +162,9 @@ class BM25IndexManager:
             "index_built": self._retriever.is_index_built,
             "total_docs": self._retriever.index_size,
             "last_built_at": self._last_built_at.isoformat() if self._last_built_at else None,
-            "seconds_since_built": (now - self._last_built_at).total_seconds() if self._last_built_at else None,
+            "seconds_since_built": (
+                (now - self._last_built_at).total_seconds() if self._last_built_at else None
+            ),
             "total_chunks_loaded": self._total_chunks_loaded,
             "build_error": self._build_error,
             "healthy": self._retriever.is_index_built and self._build_error is None,

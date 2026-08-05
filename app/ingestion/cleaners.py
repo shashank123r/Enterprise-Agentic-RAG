@@ -53,6 +53,7 @@ class CleaningPipeline:
 
 # ── Stage implementations ──────────────────────────────────────────────────
 
+
 def normalize_newlines(text: str, _meta: dict | None = None) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
@@ -72,14 +73,14 @@ def normalize_unicode(text: str, _meta: dict | None = None) -> str:
         "ﬄ": "ffl",
         "ﬅ": "st",
         "ﬆ": "st",
-        "’": "'",   # right single quote
-        "‘": "'",   # left single quote
-        "“": '"',   # left double quote
-        "”": '"',   # right double quote
-        "–": "-",   # en-dash
+        "’": "'",  # right single quote
+        "‘": "'",  # left single quote
+        "“": '"',  # left double quote
+        "”": '"',  # right double quote
+        "–": "-",  # en-dash
         "—": "--",  # em-dash
-        "…": "...", # ellipsis
-        " ": " ",   # non-breaking space
+        "…": "...",  # ellipsis
+        " ": " ",  # non-breaking space
     }
     for src, dst in _LIGATURES.items():
         text = text.replace(src, dst)
@@ -104,11 +105,11 @@ def normalize_whitespace(text: str, _meta: dict | None = None) -> str:
 _OCR_WORD_FIXES: list[tuple[re.Pattern, str]] = [
     # Isolated "0" confused with "O" in words is hard to fix; skip generic
     # Specific high-confidence OCR confusions:
-    (re.compile(r"\bRll\b"), "All"),         # R + ll → All
-    (re.compile(r"\bHl\b"), "Hi"),           # OCR confusion
-    (re.compile(r"\b1\b(?=\s+[a-z])"), "I"), # standalone digit 1 → I
+    (re.compile(r"\bRll\b"), "All"),  # R + ll → All
+    (re.compile(r"\bHl\b"), "Hi"),  # OCR confusion
+    (re.compile(r"\b1\b(?=\s+[a-z])"), "I"),  # standalone digit 1 → I
     (re.compile(r"(?<=\w)rn(?=\w)"), "m"),  # rn → m inside word (arm → arm, etc.)
-    (re.compile(r"\bII\b(?!\w)"), "ll"),     # II → ll (only in word context)
+    (re.compile(r"\bII\b(?!\w)"), "ll"),  # II → ll (only in word context)
 ]
 
 # Multi-character OCR noise patterns (regex → replacement)
@@ -135,23 +136,22 @@ def fix_ocr_artifacts(text: str, _meta: dict | None = None) -> str:
 
 # ── Header/footer removal ──────────────────────────────────────────────────
 
+
 def remove_headers_footers(text: str, _meta: dict | None = None) -> str:
     """Remove repeated boilerplate lines (headers/footers)."""
     from collections import Counter
+
     lines = text.split("\n")
     if len(lines) < 10:
         return text
     line_counts = Counter(line.strip() for line in lines if line.strip())
     threshold = max(3, len(lines) * 0.25)
     boilerplate = {
-        line for line, count in line_counts.items()
-        if count >= threshold and 3 < len(line) < 120
+        line for line, count in line_counts.items() if count >= threshold and 3 < len(line) < 120
     }
     if not boilerplate:
         return text
-    return "\n".join(
-        line for line in lines if line.strip() not in boilerplate
-    )
+    return "\n".join(line for line in lines if line.strip() not in boilerplate)
 
 
 def remove_page_numbers(text: str, _meta: dict | None = None) -> str:
@@ -194,15 +194,27 @@ def remove_empty_lines(text: str, _meta: dict | None = None) -> str:
 _INJECTION_PATTERNS: list[re.Pattern] = [
     re.compile(r"ignore\s+(all\s+)?previous\s+instructions?", re.IGNORECASE),
     re.compile(r"you\s+are\s+now\s+(a|an|the)\s+\w+", re.IGNORECASE),
-    re.compile(r"forget\s+(all\s+)?your\s+(previous\s+)?(instructions?|training|rules)", re.IGNORECASE),
+    re.compile(
+        r"forget\s+(all\s+)?your\s+(previous\s+)?(instructions?|training|rules)", re.IGNORECASE
+    ),
     re.compile(r"new\s+system\s+prompt\s*:", re.IGNORECASE),
-    re.compile(r"(developer|jailbreak|dan|god|unrestricted)\s+(mode|prompt|instructions?)", re.IGNORECASE),
+    re.compile(
+        r"(developer|jailbreak|dan|god|unrestricted)\s+(mode|prompt|instructions?)", re.IGNORECASE
+    ),
     re.compile(r"<\|?(system|user|assistant|im_start|im_end)\|?>", re.IGNORECASE),
     re.compile(r"\[INST\]|\[/INST\]|<<SYS>>|<</SYS>>"),
-    re.compile(r"act\s+as\s+(if\s+)?(you\s+are\s+)?a[n]?\s+\w+\s+(without|with no)\s+(restriction|filter|limit)", re.IGNORECASE),
+    re.compile(
+        r"act\s+as\s+(if\s+)?(you\s+are\s+)?a[n]?\s+\w+\s+(without|with no)\s+(restriction|filter|limit)",
+        re.IGNORECASE,
+    ),
     re.compile(r"print\s+(your\s+)?(system|initial|original)\s+prompt", re.IGNORECASE),
-    re.compile(r"reveal\s+(your\s+)?(system|internal|secret)\s+(prompt|instruction)", re.IGNORECASE),
-    re.compile(r"do\s+not\s+(follow|obey|adhere\s+to)\s+(the\s+)?(previous|above|prior)\s+(instruction|rule|guideline)", re.IGNORECASE),
+    re.compile(
+        r"reveal\s+(your\s+)?(system|internal|secret)\s+(prompt|instruction)", re.IGNORECASE
+    ),
+    re.compile(
+        r"do\s+not\s+(follow|obey|adhere\s+to)\s+(the\s+)?(previous|above|prior)\s+(instruction|rule|guideline)",
+        re.IGNORECASE,
+    ),
 ]
 
 
@@ -214,9 +226,11 @@ def sanitize_injection_markers(text: str, _meta: dict | None = None) -> str:
     """
     original = text
     for pattern in _INJECTION_PATTERNS:
+
         def _replace(m: re.Match) -> str:
             snippet = m.group(0)[:40].replace("]", ")") + ("..." if len(m.group(0)) > 40 else "")
             return f"[DOCUMENT-CONTENT: {snippet}]"
+
         text = pattern.sub(_replace, text)
 
     if text != original:
@@ -229,6 +243,7 @@ def sanitize_injection_markers(text: str, _meta: dict | None = None) -> str:
 
 
 # ── Default pipeline factory ───────────────────────────────────────────────
+
 
 def create_default_pipeline() -> CleaningPipeline:
     """Build the default production cleaning pipeline."""

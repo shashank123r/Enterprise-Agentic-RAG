@@ -19,8 +19,8 @@ from app.embeddings.exceptions import (
 from app.embeddings.providers.base import EmbeddingProvider, EmbeddingProviderInfo
 from app.embeddings.providers.nvidia_nim import NvidiaNIMEmbeddingProvider
 
-
 # ── Helpers ─────────────────────────────────────────────────
+
 
 def make_mock_response(status_code: int, json_data: dict | None = None) -> MagicMock:
     """Create a mock httpx.Response."""
@@ -42,11 +42,13 @@ def make_embedding_response(
     """Generate a mock NIM embedding API response."""
     data = []
     for i, _ in enumerate(texts):
-        data.append({
-            "object": "embedding",
-            "index": i,
-            "embedding": [0.1 * (i + 1)] * dim,
-        })
+        data.append(
+            {
+                "object": "embedding",
+                "index": i,
+                "embedding": [0.1 * (i + 1)] * dim,
+            }
+        )
     return {
         "object": "list",
         "data": data,
@@ -56,6 +58,7 @@ def make_embedding_response(
 
 
 # ── Fixtures ────────────────────────────────────────────────
+
 
 @pytest.fixture
 def provider() -> NvidiaNIMEmbeddingProvider:
@@ -82,6 +85,7 @@ def mock_client(provider: NvidiaNIMEmbeddingProvider) -> MagicMock:
 
 # ── Interface Compliance ───────────────────────────────────
 
+
 class TestInterfaceCompliance:
     def test_provider_is_embedding_provider(self, provider: NvidiaNIMEmbeddingProvider) -> None:
         assert isinstance(provider, EmbeddingProvider)
@@ -97,6 +101,7 @@ class TestInterfaceCompliance:
 
 # ── Input Validation (15 checks) ───────────────────────────
 
+
 class TestInputValidation:
     @pytest.mark.asyncio
     async def test_empty_input_raises(self, provider: NvidiaNIMEmbeddingProvider) -> None:
@@ -110,7 +115,8 @@ class TestInputValidation:
 
     @pytest.mark.asyncio
     async def test_metadata_length_mismatch_raises(
-        self, provider: NvidiaNIMEmbeddingProvider,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
     ) -> None:
         with pytest.raises(EmbeddingError, match="Metadata length"):
             await provider.embed_documents(["a", "b"], metadata=[{"id": "1"}])
@@ -128,10 +134,13 @@ class TestInputValidation:
 
     @pytest.mark.asyncio
     async def test_duplicate_input_logs_warning(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(["hello", "hello"], dim=4),
+            200,
+            make_embedding_response(["hello", "hello"], dim=4),
         )
         with patch("app.embeddings.providers.nvidia_nim.logger.warning") as mock_warn:
             result = await provider.embed_documents(["hello", "hello"])
@@ -142,15 +151,23 @@ class TestInputValidation:
 
 # ── Batch Response Validation ──────────────────────────────
 
+
 class TestBatchResponseValidation:
     @pytest.mark.asyncio
     async def test_empty_batch_response(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Empty vectors in response should be caught and batch marked failed."""
-        resp = make_mock_response(200, {
-            "object": "list", "data": [], "model": provider._model,
-        })
+        resp = make_mock_response(
+            200,
+            {
+                "object": "list",
+                "data": [],
+                "model": provider._model,
+            },
+        )
         mock_client.post.return_value = resp
         result = await provider.embed_documents(["hello"])
         assert len(result.failed_indices) == 1
@@ -158,7 +175,9 @@ class TestBatchResponseValidation:
 
     @pytest.mark.asyncio
     async def test_batch_count_mismatch(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Sending 2 texts but getting 1 vector should fail the batch."""
         resp = make_mock_response(200, make_embedding_response(["only_one"], dim=4))
@@ -169,78 +188,112 @@ class TestBatchResponseValidation:
 
     @pytest.mark.asyncio
     async def test_inconsistent_dimensions(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Vectors with different dimensions should fail the batch."""
         data = [
             {"object": "embedding", "index": 0, "embedding": [0.1, 0.2, 0.3, 0.4]},
             {"object": "embedding", "index": 1, "embedding": [0.5, 0.6]},  # wrong dim
         ]
-        mock_client.post.return_value = make_mock_response(200, {
-            "object": "list", "data": data, "model": provider._model,
-            "usage": {"prompt_tokens": 20, "total_tokens": 20},
-        })
+        mock_client.post.return_value = make_mock_response(
+            200,
+            {
+                "object": "list",
+                "data": data,
+                "model": provider._model,
+                "usage": {"prompt_tokens": 20, "total_tokens": 20},
+            },
+        )
         result = await provider.embed_documents(["hello", "world"])
         assert len(result.failed_indices) == 2
 
 
 # ── Vector Validation ──────────────────────────────────────
 
+
 class TestVectorValidation:
     @pytest.mark.asyncio
     async def test_nan_vector(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """NaN values in embedding should fail the batch."""
         import math
+
         data = [
             {"object": "embedding", "index": 0, "embedding": [0.1, float("nan"), 0.3, 0.4]},
         ]
-        mock_client.post.return_value = make_mock_response(200, {
-            "object": "list", "data": data, "model": provider._model,
-            "usage": {"prompt_tokens": 10, "total_tokens": 10},
-        })
+        mock_client.post.return_value = make_mock_response(
+            200,
+            {
+                "object": "list",
+                "data": data,
+                "model": provider._model,
+                "usage": {"prompt_tokens": 10, "total_tokens": 10},
+            },
+        )
         result = await provider.embed_documents(["hello"])
         assert len(result.failed_indices) >= 1
 
     @pytest.mark.asyncio
     async def test_inf_vector(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Inf values in embedding should fail the batch."""
         import math
+
         data = [
             {"object": "embedding", "index": 0, "embedding": [0.1, float("inf"), 0.3, 0.4]},
         ]
-        mock_client.post.return_value = make_mock_response(200, {
-            "object": "list", "data": data, "model": provider._model,
-            "usage": {"prompt_tokens": 10, "total_tokens": 10},
-        })
+        mock_client.post.return_value = make_mock_response(
+            200,
+            {
+                "object": "list",
+                "data": data,
+                "model": provider._model,
+                "usage": {"prompt_tokens": 10, "total_tokens": 10},
+            },
+        )
         result = await provider.embed_documents(["hello"])
         assert len(result.failed_indices) >= 1
 
     @pytest.mark.asyncio
     async def test_empty_vector(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Empty embedding vector should fail validation."""
         data = [
             {"object": "embedding", "index": 0, "embedding": []},
         ]
-        mock_client.post.return_value = make_mock_response(200, {
-            "object": "list", "data": data, "model": provider._model,
-            "usage": {"prompt_tokens": 10, "total_tokens": 10},
-        })
+        mock_client.post.return_value = make_mock_response(
+            200,
+            {
+                "object": "list",
+                "data": data,
+                "model": provider._model,
+                "usage": {"prompt_tokens": 10, "total_tokens": 10},
+            },
+        )
         result = await provider.embed_documents(["hello"])
         assert len(result.failed_indices) >= 1
 
 
 # ── Retry Policy ───────────────────────────────────────────
 
+
 class TestRetryPolicy:
     @pytest.mark.asyncio
     async def test_retry_on_timeout_then_success(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Timeout -> retry -> success should work."""
         success_resp = make_mock_response(200, make_embedding_response(["hello"], dim=4))
@@ -254,7 +307,9 @@ class TestRetryPolicy:
 
     @pytest.mark.asyncio
     async def test_retry_exhausted_on_timeout(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Repeated timeouts should eventually fail the batch."""
         mock_client.post.side_effect = httpx.TimeoutException("timeout")
@@ -264,7 +319,9 @@ class TestRetryPolicy:
 
     @pytest.mark.asyncio
     async def test_auth_failure_not_retried(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """401 should raise EmbeddingAuthError immediately — no retry."""
         mock_client.post.return_value = make_mock_response(401)
@@ -275,7 +332,9 @@ class TestRetryPolicy:
 
     @pytest.mark.asyncio
     async def test_rate_limit_retried(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """429 should be retried like a transient error."""
         success_resp = make_mock_response(200, make_embedding_response(["hello"], dim=4))
@@ -289,7 +348,9 @@ class TestRetryPolicy:
 
     @pytest.mark.asyncio
     async def test_server_error_retried(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """500 should be retried (EmbeddingServiceUnavailable)."""
         success_resp = make_mock_response(200, make_embedding_response(["hello"], dim=4))
@@ -303,7 +364,9 @@ class TestRetryPolicy:
 
     @pytest.mark.asyncio
     async def test_bad_request_not_retried(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """400 should not be retried (EmbeddingError, non-retryable)."""
         mock_client.post.return_value = make_mock_response(400)
@@ -314,14 +377,18 @@ class TestRetryPolicy:
 
 # ── Core Embedding ─────────────────────────────────────────
 
+
 class TestCoreEmbedding:
     @pytest.mark.asyncio
     async def test_embed_documents_success(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Successful embedding returns vectors with correct metadata."""
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(["hello", "world"], dim=4),
+            200,
+            make_embedding_response(["hello", "world"], dim=4),
         )
         result = await provider.embed_documents(["hello", "world"])
         assert len(result.vectors) == 2
@@ -331,11 +398,14 @@ class TestCoreEmbedding:
 
     @pytest.mark.asyncio
     async def test_embed_query_success(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Single query embedding returns an EmbeddingResult."""
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(["test query"], dim=4),
+            200,
+            make_embedding_response(["test query"], dim=4),
         )
         result = await provider.embed_query("test query")
         assert len(result.vector) == 4
@@ -344,12 +414,15 @@ class TestCoreEmbedding:
 
     @pytest.mark.asyncio
     async def test_batch_embed_with_concurrency(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Batch embed splits texts into batches and processes with concurrency."""
         texts = [f"text {i}" for i in range(25)]  # 3 batches with batch_size=10
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(texts[:10], dim=4),
+            200,
+            make_embedding_response(texts[:10], dim=4),
         )
         result = await provider.batch_embed(texts, batch_size=10)
         # With mocked response returning only first 10 vectors, each batch
@@ -361,21 +434,27 @@ class TestCoreEmbedding:
 
 # ── Health Checks ──────────────────────────────────────────
 
+
 class TestHealthCheck:
     @pytest.mark.asyncio
     async def test_health_check_success(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Health check returns True when endpoint responds."""
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(["health"], dim=4),
+            200,
+            make_embedding_response(["health"], dim=4),
         )
         healthy = await provider.health_check()
         assert healthy is True
 
     @pytest.mark.asyncio
     async def test_health_check_failure(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """Health check returns False on connection error."""
         mock_client.post.side_effect = httpx.ConnectError("Connection refused")
@@ -384,11 +463,14 @@ class TestHealthCheck:
 
     @pytest.mark.asyncio
     async def test_model_info_includes_runtime_data(
-        self, provider: NvidiaNIMEmbeddingProvider, mock_client: MagicMock,
+        self,
+        provider: NvidiaNIMEmbeddingProvider,
+        mock_client: MagicMock,
     ) -> None:
         """model_info returns EmbeddingProviderInfo with runtime metadata."""
         mock_client.post.return_value = make_mock_response(
-            200, make_embedding_response(["test"], dim=4),
+            200,
+            make_embedding_response(["test"], dim=4),
         )
         info = await provider.model_info()
         assert isinstance(info, EmbeddingProviderInfo)
@@ -400,6 +482,7 @@ class TestHealthCheck:
 
 
 # ── Configuration ──────────────────────────────────────────
+
 
 class TestConfiguration:
     @pytest.mark.asyncio
@@ -422,6 +505,7 @@ class TestConfiguration:
 
 
 # ── Factory ────────────────────────────────────────────────
+
 
 class TestProviderFactory:
     @pytest.mark.asyncio
@@ -458,12 +542,14 @@ class TestProviderFactory:
 
 # ── Connection Pool ────────────────────────────────────────
 
+
 class TestConnectionPool:
     @pytest.mark.asyncio
     async def test_client_lazy_initialization(self) -> None:
         """HTTP client should be None until first access."""
         p = NvidiaNIMEmbeddingProvider(
-            api_url="http://test:8000", api_key="key",
+            api_url="http://test:8000",
+            api_key="key",
             model="nvidia/nv-embed-qa-4",
         )
         assert p._client is None

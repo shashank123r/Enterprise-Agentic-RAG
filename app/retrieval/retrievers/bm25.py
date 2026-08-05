@@ -188,18 +188,20 @@ class BM25Retriever(Retriever):
                 # Return top-k
                 candidates = []
                 for score, entry in filtered[:top_k]:
-                    candidates.append(RetrievalCandidate(
-                        chunk_id=entry.chunk_id,
-                        document_id=entry.document_id,
-                        text=entry.text,
-                        score=score,
-                        page_number=entry.page_number,
-                        section_title=entry.section_title,
-                        chunk_index=entry.chunk_index,
-                        language=entry.language,
-                        metadata=entry.metadata,
-                        retrieval_source="bm25",
-                    ))
+                    candidates.append(
+                        RetrievalCandidate(
+                            chunk_id=entry.chunk_id,
+                            document_id=entry.document_id,
+                            text=entry.text,
+                            score=score,
+                            page_number=entry.page_number,
+                            section_title=entry.section_title,
+                            chunk_index=entry.chunk_index,
+                            language=entry.language,
+                            metadata=entry.metadata,
+                            retrieval_source="bm25",
+                        )
+                    )
 
                 logger.debug(
                     "BM25 retrieval complete",
@@ -273,7 +275,9 @@ class BM25Retriever(Retriever):
             idf = math.log(1 + (self._total_docs - df + 0.5) / (df + 0.5))
 
             numerator = tf * (self._k1 + 1)
-            denominator = tf + self._k1 * (1 - self._b + self._b * (doc_len / max(self._avg_doc_length, 1)))
+            denominator = tf + self._k1 * (
+                1 - self._b + self._b * (doc_len / max(self._avg_doc_length, 1))
+            )
             score += idf * (numerator / denominator)
 
         return score

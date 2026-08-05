@@ -33,7 +33,7 @@ class RetrievalEvalResult:
 
     query_id: str
     question: str
-    recall_at_k: dict[int, float] = field(default_factory=dict)   # {k: recall}
+    recall_at_k: dict[int, float] = field(default_factory=dict)  # {k: recall}
     precision_at_k: dict[int, float] = field(default_factory=dict)
     ndcg_at_k: dict[int, float] = field(default_factory=dict)
     reciprocal_rank: float = 0.0
@@ -52,12 +52,12 @@ class GenerationEvalResult:
     question: str
     generated_answer: str = ""
     reference_answer: str = ""
-    faithfulness: float = 0.0          # How grounded in sources [0, 1]
-    answer_relevancy: float = 0.0      # How relevant to the question [0, 1]
-    context_precision: float = 0.0     # Fraction of retrieved chunks that are useful [0, 1]
-    context_recall: float = 0.0        # Fraction of necessary info retrieved [0, 1]
+    faithfulness: float = 0.0  # How grounded in sources [0, 1]
+    answer_relevancy: float = 0.0  # How relevant to the question [0, 1]
+    context_precision: float = 0.0  # Fraction of retrieved chunks that are useful [0, 1]
+    context_recall: float = 0.0  # Fraction of necessary info retrieved [0, 1]
     grounding_confidence: float = 0.0  # From GroundingValidator
-    citation_coverage: float = 0.0     # Fraction of answer sentences with citations
+    citation_coverage: float = 0.0  # Fraction of answer sentences with citations
     latency_ms: float = 0.0
     token_usage: dict[str, int] = field(default_factory=dict)
 

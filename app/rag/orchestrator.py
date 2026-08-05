@@ -185,7 +185,9 @@ class RAGOrchestrator:
         if stream:
             llm_start = time.monotonic()
             answer_text, token_info = await self._call_llm_stream(
-                messages, temperature=llm_temp, max_tokens=llm_max_tokens,
+                messages,
+                temperature=llm_temp,
+                max_tokens=llm_max_tokens,
             )
             llm_duration = time.monotonic() - llm_start
             prompt_tokens = token_info.get("prompt_tokens", 0)
@@ -194,7 +196,9 @@ class RAGOrchestrator:
         else:
             llm_start = time.monotonic()
             answer_text, token_info = await self._call_llm(
-                messages, temperature=llm_temp, max_tokens=llm_max_tokens,
+                messages,
+                temperature=llm_temp,
+                max_tokens=llm_max_tokens,
             )
             llm_duration = time.monotonic() - llm_start
             prompt_tokens = token_info.get("prompt_tokens", 0)
@@ -327,9 +331,8 @@ class RAGOrchestrator:
             }
 
             import json as _json
-            async with self.client.stream(
-                "POST", self._llm_api_url, json=llm_payload
-            ) as response:
+
+            async with self.client.stream("POST", self._llm_api_url, json=llm_payload) as response:
                 if response.status_code != 200:
                     error_bytes = await response.aread()
                     yield {"type": "error", "message": f"LLM error: HTTP {response.status_code}"}
@@ -514,11 +517,7 @@ class RAGOrchestrator:
         """Convert RetrievedChunk objects to RAGChunk for the response."""
         rag_chunks = []
         for c in chunks:
-            doc_title = (
-                c.metadata.get("document_title")
-                or c.metadata.get("title")
-                or ""
-            )
+            doc_title = c.metadata.get("document_title") or c.metadata.get("title") or ""
             rag_chunks.append(
                 RAGChunk(
                     chunk_id=c.chunk_id,

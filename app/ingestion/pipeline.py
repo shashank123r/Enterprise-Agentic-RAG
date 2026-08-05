@@ -50,14 +50,26 @@ class IngestionPipeline:
         self.start_time: float = 0.0
 
     async def run(
-        self, document_id: str, file_path: str, mime_type: str, user_id: str = "system",
+        self,
+        document_id: str,
+        file_path: str,
+        mime_type: str,
+        user_id: str = "system",
     ) -> dict[str, Any]:
         self.start_time = time.monotonic()
         job = await self.job_repo.get_job_by_document(document_id)
         if not job:
             raise ValueError(f"No ingestion job found for document {document_id}")
 
-        stats: dict[str, Any] = {"ocr_used": False, "page_count": 0, "table_count": 0, "image_count": 0, "chunk_count": 0, "errors": [], "language": None}
+        stats: dict[str, Any] = {
+            "ocr_used": False,
+            "page_count": 0,
+            "table_count": 0,
+            "image_count": 0,
+            "chunk_count": 0,
+            "errors": [],
+            "language": None,
+        }
 
         try:
             await self.job_repo.mark_started(job.id)
@@ -84,7 +96,17 @@ class IngestionPipeline:
                         if page_num <= len(result.pages):
                             result.pages[page_num - 1].text = ocr_content
                         else:
-                            result.pages.append(type('Page', (), {'page_number': page_num, 'text': ocr_content, 'section_title': None})())
+                            result.pages.append(
+                                type(
+                                    "Page",
+                                    (),
+                                    {
+                                        "page_number": page_num,
+                                        "text": ocr_content,
+                                        "section_title": None,
+                                    },
+                                )()
+                            )
                 stats["ocr_used"] = ocr_applied
                 result.metadata["ocr_applied"] = True
 
@@ -99,16 +121,35 @@ class IngestionPipeline:
 
             # Stage 5: Chunking
             await self._update_stage(job, "chunking", 60)
-            chunks = await chunking_pipeline.chunk_document(cleaned_text, strategy="auto", mime_type=mime_type)
+            chunks = await chunking_pipeline.chunk_document(
+                cleaned_text, strategy="auto", mime_type=mime_type
+            )
 
             # Stage 6: Batch store
             await self._update_stage(job, "storing", 75)
             await self._batch_store(document_id, result, chunks, lang_code)
 
             # Stage 7: Update document
-            stats.update(page_count=len(result.pages), table_count=len(result.tables), image_count=len(result.images), chunk_count=len(chunks))
+            stats.update(
+                page_count=len(result.pages),
+                table_count=len(result.tables),
+                image_count=len(result.images),
+                chunk_count=len(chunks),
+            )
             processing_time = int((time.monotonic() - self.start_time) * 1000)
-            await self.doc_repo.update(document_id, status="completed", language=lang_code, page_count=stats["page_count"], table_count=stats["table_count"], image_count=stats["image_count"], chunk_count=stats["chunk_count"], ocr_used=stats["ocr_used"], processing_time_ms=processing_time, custom_metadata=result.metadata, extraction_errors=result.errors)
+            await self.doc_repo.update(
+                document_id,
+                status="completed",
+                language=lang_code,
+                page_count=stats["page_count"],
+                table_count=stats["table_count"],
+                image_count=stats["image_count"],
+                chunk_count=stats["chunk_count"],
+                ocr_used=stats["ocr_used"],
+                processing_time_ms=processing_time,
+                custom_metadata=result.metadata,
+                extraction_errors=result.errors,
+            )
             await self.job_repo.mark_completed(job.id)
 
         except Exception as e:
@@ -123,28 +164,46 @@ class IngestionPipeline:
     async def _update_stage(self, job: Any, stage: str, progress: float) -> None:
         await self.job_repo.update_progress(job.id, progress, stage)
 
-    async def _batch_store(self, document_id: str, result: ExtractionResult, chunks: list, language: str | None) -> None:
+    async def _batch_store(
+        self, document_id: str, result: ExtractionResult, chunks: list, language: str | None
+    ) -> None:
         """Batch insert all extraction results — image storage uses StorageProvider."""
         # Batch tables
         table_records = []
         for table in result.tables:
-            table_records.append(DocumentTable(
-                document_id=document_id, page_number=table.page_number, table_index=table.table_index,
-                caption=table.caption, csv_representation=table.to_csv(), html_representation=table.to_html(),
-                row_count=table.row_count, column_count=table.column_count,
-            ))
+            table_records.append(
+                DocumentTable(
+                    document_id=document_id,
+                    page_number=table.page_number,
+                    table_index=table.table_index,
+                    caption=table.caption,
+                    csv_representation=table.to_csv(),
+                    html_representation=table.to_html(),
+                    row_count=table.row_count,
+                    column_count=table.column_count,
+                )
+            )
         self.db.add_all(table_records)
 
         # Batch chunks
         chunk_records = []
         for chunk in chunks:
-            chunk_records.append(DocumentChunk(
-                document_id=document_id, chunk_index=chunk.chunk_index, content=chunk.content,
-                content_checksum=chunk.content_checksum, page_number=chunk.page_number,
-                section_title=chunk.section_title, section_hierarchy=chunk.section_hierarchy,
-                chunk_type=chunk.chunk_type, custom_metadata=chunk.metadata, language=chunk.language or language,
-                token_count=chunk.token_count, char_count=chunk.char_count,
-            ))
+            chunk_records.append(
+                DocumentChunk(
+                    document_id=document_id,
+                    chunk_index=chunk.chunk_index,
+                    content=chunk.content,
+                    content_checksum=chunk.content_checksum,
+                    page_number=chunk.page_number,
+                    section_title=chunk.section_title,
+                    section_hierarchy=chunk.section_hierarchy,
+                    chunk_type=chunk.chunk_type,
+                    custom_metadata=chunk.metadata,
+                    language=chunk.language or language,
+                    token_count=chunk.token_count,
+                    char_count=chunk.char_count,
+                )
+            )
         self.db.add_all(chunk_records)
 
         # Store images via StorageProvider
@@ -155,11 +214,20 @@ class IngestionPipeline:
             image_filename = f"page{img.page_number or 0}_img{img.image_index}.{ext}"
             image_path = f"{image_dir}/{image_filename}"
             await self.storage.save(image_path, img.image_data)
-            image_records.append(DocumentImage(
-                document_id=document_id, page_number=img.page_number, image_index=img.image_index,
-                image_path=image_path, caption=img.caption, alt_text=img.alt_text,
-                width=img.width, height=img.height, format=img.format, size_bytes=img.size_bytes,
-            ))
+            image_records.append(
+                DocumentImage(
+                    document_id=document_id,
+                    page_number=img.page_number,
+                    image_index=img.image_index,
+                    image_path=image_path,
+                    caption=img.caption,
+                    alt_text=img.alt_text,
+                    width=img.width,
+                    height=img.height,
+                    format=img.format,
+                    size_bytes=img.size_bytes,
+                )
+            )
         self.db.add_all(image_records)
         await self.db.flush()
 
@@ -171,7 +239,9 @@ async def compute_checksum(file_path: str, storage: StorageProvider | None = Non
     return ""
 
 
-async def validate_file(file_path: str, mime_type: str, storage: StorageProvider, max_size_mb: int | None = None) -> list[str]:
+async def validate_file(
+    file_path: str, mime_type: str, storage: StorageProvider, max_size_mb: int | None = None
+) -> list[str]:
     """Validate a file via StorageProvider — no direct filesystem access."""
     from app.core.config import settings
 
@@ -187,7 +257,9 @@ async def validate_file(file_path: str, mime_type: str, storage: StorageProvider
     if file_size == 0:
         errors.append("File is empty")
     if file_size > max_size:
-        errors.append(f"File size exceeds maximum of {max_size_mb or settings.MAX_UPLOAD_SIZE_MB}MB")
+        errors.append(
+            f"File size exceeds maximum of {max_size_mb or settings.MAX_UPLOAD_SIZE_MB}MB"
+        )
 
     if mime_type not in extractor_registry.supported_mime_types:
         errors.append(f"Unsupported MIME type: {mime_type}")

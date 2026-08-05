@@ -83,9 +83,7 @@ class TestRateLimitMiddleware:
         assert "X-RateLimit-Limit" in response.headers
 
     @pytest.mark.asyncio
-    async def test_over_limit_returns_429_without_processing(
-        self, middleware: RateLimitMiddleware
-    ):
+    async def test_over_limit_returns_429_without_processing(self, middleware: RateLimitMiddleware):
         """CRITICAL: over-limit requests get 429 and call_next is never invoked."""
         call_next_called = False
 
@@ -116,24 +114,18 @@ class TestRateLimitMiddleware:
         assert response.headers["X-RateLimit-Remaining"] == "0"
 
     @pytest.mark.asyncio
-    async def test_health_endpoint_bypasses_rate_limit(
-        self, middleware: RateLimitMiddleware
-    ):
+    async def test_health_endpoint_bypasses_rate_limit(self, middleware: RateLimitMiddleware):
         """Health endpoints are exempt from rate limiting."""
         with patch("app.middleware.rate_limit.settings") as mock_settings:
             mock_settings.RATE_LIMIT_ENABLED = True
             mock_settings.RATE_LIMIT_REQUESTS_PER_MINUTE = 5
             # Simulate a very high count — should still pass for health endpoint
-            response = await _run_dispatch(
-                middleware, path="/api/v1/health", redis_count=9999
-            )
+            response = await _run_dispatch(middleware, path="/api/v1/health", redis_count=9999)
 
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_rate_limit_disabled_allows_any_count(
-        self, middleware: RateLimitMiddleware
-    ):
+    async def test_rate_limit_disabled_allows_any_count(self, middleware: RateLimitMiddleware):
         """When RATE_LIMIT_ENABLED=False every request passes through."""
         with patch("app.middleware.rate_limit.settings") as mock_settings:
             mock_settings.RATE_LIMIT_ENABLED = False
@@ -165,9 +157,7 @@ class TestRateLimitMiddleware:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_x_forwarded_for_used_as_client_ip(
-        self, middleware: RateLimitMiddleware
-    ):
+    async def test_x_forwarded_for_used_as_client_ip(self, middleware: RateLimitMiddleware):
         """X-Forwarded-For header is respected for IP detection."""
         mock_request = MagicMock(spec=Request)
         mock_request.url.path = "/test"
@@ -197,6 +187,6 @@ class TestRateLimitMiddleware:
 
             await middleware.dispatch(mock_request, lambda r: Response("ok", 200))
 
-        assert any("10.0.0.1" in k for k in captured_key), (
-            "Rate limit key should use X-Forwarded-For IP"
-        )
+        assert any(
+            "10.0.0.1" in k for k in captured_key
+        ), "Rate limit key should use X-Forwarded-For IP"

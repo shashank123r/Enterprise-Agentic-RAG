@@ -3,7 +3,12 @@
 All exceptions extend AppException for consistent API error handling.
 """
 
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_503_SERVICE_UNAVAILABLE
+from starlette.status import (
+    HTTP_404_NOT_FOUND,
+    HTTP_400_BAD_REQUEST,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
 
 from app.core.exceptions import AppException
 
@@ -36,7 +41,9 @@ class RetrieverUnavailable(RetrievalError):
     """Retriever dependency (e.g. Milvus, BM25 index) is unavailable."""
 
     def __init__(self, message: str = "Retriever unavailable") -> None:
-        super().__init__(message=message, code="retriever_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="retriever_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class RerankerError(RetrievalError):
@@ -50,7 +57,9 @@ class RerankerUnavailable(RetrievalError):
     """Reranker service is unavailable."""
 
     def __init__(self, message: str = "Reranker unavailable") -> None:
-        super().__init__(message=message, code="reranker_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="reranker_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class QueryError(RetrievalError):
@@ -63,7 +72,9 @@ class QueryError(RetrievalError):
 class ContextBuilderError(RetrievalError):
     """Context window construction failed."""
 
-    def __init__(self, message: str = "Context builder error", code: str = "context_builder_error") -> None:
+    def __init__(
+        self, message: str = "Context builder error", code: str = "context_builder_error"
+    ) -> None:
         super().__init__(message=message, code=code)
 
 

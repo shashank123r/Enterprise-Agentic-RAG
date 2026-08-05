@@ -67,9 +67,7 @@ class RedisManager:
             RuntimeError: If Redis is not initialized.
         """
         if self._client is None:
-            raise RuntimeError(
-                "Redis client not initialized. Call `initialize()` first."
-            )
+            raise RuntimeError("Redis client not initialized. Call `initialize()` first.")
         return self._client
 
     # ── Convenience Methods ───────────────────

@@ -3,7 +3,12 @@
 All exceptions extend AppException for consistent API error handling.
 """
 
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_503_SERVICE_UNAVAILABLE, HTTP_409_CONFLICT
+from starlette.status import (
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+    HTTP_409_CONFLICT,
+)
 
 from app.core.exceptions import AppException
 
@@ -25,7 +30,11 @@ class EmbeddingServiceUnavailable(EmbeddingError):
     """Embedding provider (e.g. NVIDIA NIM) is unreachable."""
 
     def __init__(self, message: str = "Embedding service unavailable") -> None:
-        super().__init__(message=message, code="embedding_service_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message,
+            code="embedding_service_unavailable",
+            status_code=HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 class EmbeddingAuthError(EmbeddingError):
@@ -37,7 +46,9 @@ class EmbeddingAuthError(EmbeddingError):
     """
 
     def __init__(self, message: str = "Embedding provider authentication failed") -> None:
-        super().__init__(message=message, code="embedding_auth_error", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="embedding_auth_error", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class DuplicateInputIdError(EmbeddingError):
@@ -72,7 +83,9 @@ class EmbeddingTimeout(EmbeddingError):
     """Embedding request exceeded timeout."""
 
     def __init__(self, message: str = "Embedding request timed out") -> None:
-        super().__init__(message=message, code="embedding_timeout", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="embedding_timeout", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class IndexingError(AppException):

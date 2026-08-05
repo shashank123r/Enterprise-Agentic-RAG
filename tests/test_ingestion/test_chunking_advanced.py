@@ -41,7 +41,9 @@ class TestCodeAwareChunker:
     @pytest.mark.asyncio
     async def test_sql_detection(self):
         chunker = CodeAwareChunker()
-        lang = chunker._detect_language("SELECT id FROM users WHERE active=1;\nCREATE TABLE t (x INT);")
+        lang = chunker._detect_language(
+            "SELECT id FROM users WHERE active=1;\nCREATE TABLE t (x INT);"
+        )
         assert lang == "sql"
 
 

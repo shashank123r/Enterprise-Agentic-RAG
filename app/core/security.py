@@ -42,10 +42,7 @@ def create_access_token(
         Encoded JWT string.
     """
     now = datetime.now(UTC)
-    expire = now + (
-        expires_delta
-        or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
+    expire = now + (expires_delta or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
 
     jti = str(uuid4())
     claims = {
@@ -73,10 +70,7 @@ def create_refresh_token(
 ) -> str:
     """Create a JWT refresh token with longer expiry."""
     now = datetime.now(UTC)
-    expire = now + (
-        expires_delta
-        or timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-    )
+    expire = now + (expires_delta or timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS))
 
     jti = str(uuid4())
     claims = {
@@ -137,7 +131,5 @@ def verify_token(token: str, expected_type: str = "access") -> dict[str, Any]:
     payload = decode_token(token)
     token_type = payload.get("type")
     if token_type != expected_type:
-        raise ValueError(
-            f"Invalid token type: expected '{expected_type}', got '{token_type}'"
-        )
+        raise ValueError(f"Invalid token type: expected '{expected_type}', got '{token_type}'")
     return payload

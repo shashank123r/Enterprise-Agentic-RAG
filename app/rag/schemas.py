@@ -13,17 +13,23 @@ class RAGRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=16384, description="User question")
     collection_name: str = Field("documents", description="Milvus collection to search")
     top_k: int = Field(10, ge=1, le=50, description="Number of chunks to retrieve")
-    retrieval_method: str = Field("hybrid", description="Retrieval method: dense, bm25, hybrid, parent_child")
+    retrieval_method: str = Field(
+        "hybrid", description="Retrieval method: dense, bm25, hybrid, parent_child"
+    )
     rerank: bool = Field(True, description="Whether to apply reranking")
     query_rewrite: bool = Field(True, description="Apply query rewriting before search")
     filters: dict[str, Any] = Field(default_factory=dict, description="Metadata filters")
-    max_context_tokens: int | None = Field(4096, ge=256, le=32768, description="Max tokens for context window")
-    max_response_tokens: int | None = Field(1024, ge=64, le=16384, description="Max tokens in response")
+    max_context_tokens: int | None = Field(
+        4096, ge=256, le=32768, description="Max tokens for context window"
+    )
+    max_response_tokens: int | None = Field(
+        1024, ge=64, le=16384, description="Max tokens in response"
+    )
     temperature: float | None = Field(0.1, ge=0.0, le=2.0, description="LLM temperature")
     stream: bool = Field(True, description="Whether to stream the response")
     conversation_history: list[dict[str, str]] | None = Field(
         None,
-        description="Previous messages: [{\"role\": \"user\"|\"assistant\", \"content\": \"...\"}]",
+        description='Previous messages: [{"role": "user"|"assistant", "content": "..."}]',
     )
 
 
@@ -84,5 +90,7 @@ class ValidateResponse(BaseModel):
 
     grounding_valid: bool = Field(True, description="Whether answer is properly grounded")
     issues: list[str] = Field(default_factory=list, description="Any grounding issues found")
-    unsupported_statements: list[str] = Field(default_factory=list, description="Specific unsupported claims")
+    unsupported_statements: list[str] = Field(
+        default_factory=list, description="Specific unsupported claims"
+    )
     suggested_fixes: list[str] = Field(default_factory=list, description="Suggested corrections")

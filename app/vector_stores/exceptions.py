@@ -32,14 +32,22 @@ class VectorStoreUnavailable(VectorStoreError):
     """Vector database (e.g. Milvus) is unreachable."""
 
     def __init__(self, message: str = "Vector store is unavailable") -> None:
-        super().__init__(message=message, code="vector_store_unavailable", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message,
+            code="vector_store_unavailable",
+            status_code=HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 class VectorStoreAuthError(VectorStoreError):
     """Authentication with the vector database failed."""
 
     def __init__(self, message: str = "Vector store authentication failed") -> None:
-        super().__init__(message=message, code="vector_store_auth_error", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message,
+            code="vector_store_auth_error",
+            status_code=HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 class CollectionNotFound(VectorStoreError):
@@ -115,7 +123,9 @@ class VectorStoreTimeout(VectorStoreError):
     """Vector store operation exceeded timeout."""
 
     def __init__(self, message: str = "Vector store operation timed out") -> None:
-        super().__init__(message=message, code="vector_store_timeout", status_code=HTTP_503_SERVICE_UNAVAILABLE)
+        super().__init__(
+            message=message, code="vector_store_timeout", status_code=HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 
 class IndexError_(VectorStoreError):

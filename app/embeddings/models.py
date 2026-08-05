@@ -8,7 +8,18 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,14 +32,22 @@ class IndexingJob(Base, TimestampMixin):
     __tablename__ = "indexing_jobs"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()),
+        UUID(as_uuid=False),
+        primary_key=True,
+        default=lambda: str(uuid4()),
     )
     document_id: Mapped[str | None] = mapped_column(
-        UUID(as_uuid=False), ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True,
+        UUID(as_uuid=False),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     collection_name: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(
-        String(32), default="queued", nullable=False, index=True,
+        String(32),
+        default="queued",
+        nullable=False,
+        index=True,
     )
     progress: Mapped[float] = mapped_column(Float, default=0.0)
     current_stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -49,7 +68,9 @@ class CollectionMetadata(Base, TimestampMixin):
     __tablename__ = "collection_metadata"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()),
+        UUID(as_uuid=False),
+        primary_key=True,
+        default=lambda: str(uuid4()),
     )
     name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
     display_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -70,7 +91,9 @@ class EmbeddingModelVersion(Base, TimestampMixin):
     __tablename__ = "embedding_model_versions"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid4()),
+        UUID(as_uuid=False),
+        primary_key=True,
+        default=lambda: str(uuid4()),
     )
     model_name: Mapped[str] = mapped_column(String(128), nullable=False)
     model_version: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -79,6 +102,4 @@ class EmbeddingModelVersion(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     config: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=dict)
 
-    __table_args__ = (
-        UniqueConstraint("model_name", "model_version", name="uq_model_version"),
-    )
+    __table_args__ = (UniqueConstraint("model_name", "model_version", name="uq_model_version"),)

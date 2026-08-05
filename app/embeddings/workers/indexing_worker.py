@@ -30,7 +30,9 @@ INDEXING_DLQ_KEY = "rag:dlq:indexing"
 MAX_RETRIES = 3
 
 
-async def index_document(ctx: dict[str, Any], job_id: str, document_id: str, collection_name: str) -> dict[str, Any]:
+async def index_document(
+    ctx: dict[str, Any], job_id: str, document_id: str, collection_name: str
+) -> dict[str, Any]:
     """Background ARQ task: index a document's chunks into the vector store.
 
     This task is enqueued by the API after creating the IndexingJob record.
@@ -64,18 +66,20 @@ async def index_document(ctx: dict[str, Any], job_id: str, document_id: str, col
         for c in chunks:
             meta = dict(c.metadata) if c.metadata else {}
             meta["document_id"] = document_id
-            chunk_dicts.append({
-                "chunk_id": c.id,
-                "text": c.content,
-                "metadata": meta,
-                "checksum": c.content_checksum,
-                "chunk_index": c.chunk_index,
-                "page_number": c.page_number,
-                "section_title": c.section_title,
-                "language": c.language or "unknown",
-                "version": 1,
-                "source": "",
-            })
+            chunk_dicts.append(
+                {
+                    "chunk_id": c.id,
+                    "text": c.content,
+                    "metadata": meta,
+                    "checksum": c.content_checksum,
+                    "chunk_index": c.chunk_index,
+                    "page_number": c.page_number,
+                    "section_title": c.section_title,
+                    "language": c.language or "unknown",
+                    "version": 1,
+                    "source": "",
+                }
+            )
 
         # Get singletons
         provider = await get_embedding_provider()
@@ -112,6 +116,7 @@ async def index_document(ctx: dict[str, Any], job_id: str, document_id: str, col
         try:
             # Run the batch indexer directly (same as _run_indexing but in ARQ context)
             from app.embeddings.services.batch_indexer import BatchIndexer
+
             indexer = BatchIndexer(
                 embedding_provider=provider,
                 vector_store=store,
@@ -208,6 +213,7 @@ async def retry_dead_letter_indexing(ctx: dict[str, Any]) -> int:
 async def _worker_startup(ctx: dict) -> None:
     """Initialize resources when the ARQ worker starts."""
     from app.core.logging import setup_logging
+
     setup_logging()
     logger.info(
         "Indexing ARQ worker started",

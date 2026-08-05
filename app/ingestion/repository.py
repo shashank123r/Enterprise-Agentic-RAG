@@ -6,7 +6,14 @@ from typing import Any
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ingestion.models import Document, DocumentChunk, DocumentImage, DocumentTable, DocumentVersion, IngestionJob
+from app.ingestion.models import (
+    Document,
+    DocumentChunk,
+    DocumentImage,
+    DocumentTable,
+    DocumentVersion,
+    IngestionJob,
+)
 from app.repositories.base import BaseRepository
 
 
@@ -62,9 +69,7 @@ class DocumentRepository(BaseRepository[Document]):
         """Permanently delete a document and all related data."""
         await self.delete(document_id)
 
-    async def update_status(
-        self, document_id: str, status: str, **extra: Any
-    ) -> Document:
+    async def update_status(self, document_id: str, status: str, **extra: Any) -> Document:
         """Update document status."""
         return await self.update(document_id, status=status, **extra)
 
@@ -75,9 +80,7 @@ class DocumentVersionRepository(BaseRepository[DocumentVersion]):
     def __init__(self, db: AsyncSession) -> None:
         super().__init__(db, DocumentVersion)
 
-    async def get_versions(
-        self, document_id: str
-    ) -> list[DocumentVersion]:
+    async def get_versions(self, document_id: str) -> list[DocumentVersion]:
         """Get all versions for a document."""
         stmt = (
             select(DocumentVersion)
@@ -87,9 +90,7 @@ class DocumentVersionRepository(BaseRepository[DocumentVersion]):
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_latest_version(
-        self, document_id: str
-    ) -> DocumentVersion | None:
+    async def get_latest_version(self, document_id: str) -> DocumentVersion | None:
         """Get the latest version of a document."""
         stmt = (
             select(DocumentVersion)
@@ -100,9 +101,7 @@ class DocumentVersionRepository(BaseRepository[DocumentVersion]):
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_next_version_number(
-        self, document_id: str
-    ) -> int:
+    async def get_next_version_number(self, document_id: str) -> int:
         """Get the next version number for a document."""
         latest = await self.get_latest_version(document_id)
         return (latest.version_number + 1) if latest else 1
@@ -114,9 +113,7 @@ class DocumentChunkRepository(BaseRepository[DocumentChunk]):
     def __init__(self, db: AsyncSession) -> None:
         super().__init__(db, DocumentChunk)
 
-    async def get_chunks_by_document(
-        self, document_id: str
-    ) -> list[DocumentChunk]:
+    async def get_chunks_by_document(self, document_id: str) -> list[DocumentChunk]:
         """Get all chunks for a document, ordered by position."""
         stmt = (
             select(DocumentChunk)
@@ -128,15 +125,11 @@ class DocumentChunkRepository(BaseRepository[DocumentChunk]):
 
     async def delete_by_document(self, document_id: str) -> None:
         """Delete all chunks for a document."""
-        stmt = delete(DocumentChunk).where(
-            DocumentChunk.document_id == document_id
-        )
+        stmt = delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
         await self.db.execute(stmt)
         await self.db.flush()
 
-    async def bulk_create(
-        self, chunks: list[dict[str, Any]]
-    ) -> list[DocumentChunk]:
+    async def bulk_create(self, chunks: list[dict[str, Any]]) -> list[DocumentChunk]:
         """Bulk insert chunks."""
         results: list[DocumentChunk] = []
         for chunk_data in chunks:
@@ -155,9 +148,7 @@ class DocumentTableRepository(BaseRepository[DocumentTable]):
     def __init__(self, db: AsyncSession) -> None:
         super().__init__(db, DocumentTable)
 
-    async def get_tables_by_document(
-        self, document_id: str
-    ) -> list[DocumentTable]:
+    async def get_tables_by_document(self, document_id: str) -> list[DocumentTable]:
         stmt = (
             select(DocumentTable)
             .where(DocumentTable.document_id == document_id)
@@ -167,9 +158,7 @@ class DocumentTableRepository(BaseRepository[DocumentTable]):
         return list(result.scalars().all())
 
     async def delete_by_document(self, document_id: str) -> None:
-        stmt = delete(DocumentTable).where(
-            DocumentTable.document_id == document_id
-        )
+        stmt = delete(DocumentTable).where(DocumentTable.document_id == document_id)
         await self.db.execute(stmt)
         await self.db.flush()
 
@@ -180,9 +169,7 @@ class DocumentImageRepository(BaseRepository[DocumentImage]):
     def __init__(self, db: AsyncSession) -> None:
         super().__init__(db, DocumentImage)
 
-    async def get_images_by_document(
-        self, document_id: str
-    ) -> list[DocumentImage]:
+    async def get_images_by_document(self, document_id: str) -> list[DocumentImage]:
         stmt = (
             select(DocumentImage)
             .where(DocumentImage.document_id == document_id)
@@ -192,9 +179,7 @@ class DocumentImageRepository(BaseRepository[DocumentImage]):
         return list(result.scalars().all())
 
     async def delete_by_document(self, document_id: str) -> None:
-        stmt = delete(DocumentImage).where(
-            DocumentImage.document_id == document_id
-        )
+        stmt = delete(DocumentImage).where(DocumentImage.document_id == document_id)
         await self.db.execute(stmt)
         await self.db.flush()
 
@@ -209,17 +194,13 @@ class IngestionJobRepository(BaseRepository[IngestionJob]):
         """Get all jobs that are still processing."""
         stmt = (
             select(IngestionJob)
-            .where(
-                IngestionJob.status.in_(["queued", "processing"])
-            )
+            .where(IngestionJob.status.in_(["queued", "processing"]))
             .order_by(IngestionJob.created_at.desc())
         )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_job_by_document(
-        self, document_id: str
-    ) -> IngestionJob | None:
+    async def get_job_by_document(self, document_id: str) -> IngestionJob | None:
         """Get the most recent job for a document."""
         stmt = (
             select(IngestionJob)
@@ -260,9 +241,7 @@ class IngestionJobRepository(BaseRepository[IngestionJob]):
             completed_at=datetime.now(UTC),
         )
 
-    async def mark_failed(
-        self, job_id: str, error_message: str
-    ) -> IngestionJob:
+    async def mark_failed(self, job_id: str, error_message: str) -> IngestionJob:
         """Mark job as failed with error details."""
         return await self.update(
             job_id,
@@ -271,9 +250,7 @@ class IngestionJobRepository(BaseRepository[IngestionJob]):
             error_message=error_message,
         )
 
-    async def mark_retrying(
-        self, job_id: str, retry_count: int
-    ) -> IngestionJob:
+    async def mark_retrying(self, job_id: str, retry_count: int) -> IngestionJob:
         """Mark job for retry."""
         return await self.update(
             job_id,

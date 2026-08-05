@@ -98,15 +98,10 @@ class Document(Base, TimestampMixin):
         foreign_keys="IngestionJob.document_id",
     )
 
-    __table_args__ = (
-        Index("ix_documents_checksum_active", "checksum", "is_deleted"),
-    )
+    __table_args__ = (Index("ix_documents_checksum_active", "checksum", "is_deleted"),)
 
     def __repr__(self) -> str:
-        return (
-            f"<Document(id={self.id}, filename={self.filename}, "
-            f"status={self.status})>"
-        )
+        return f"<Document(id={self.id}, filename={self.filename}, " f"status={self.status})>"
 
 
 class DocumentVersion(Base, TimestampMixin):
@@ -138,9 +133,7 @@ class DocumentVersion(Base, TimestampMixin):
     )
 
     __table_args__ = (
-        UniqueConstraint(
-            "document_id", "version_number", name="uq_document_version"
-        ),
+        UniqueConstraint("document_id", "version_number", name="uq_document_version"),
     )
 
 
@@ -175,12 +168,8 @@ class DocumentChunk(Base, TimestampMixin):
     content_checksum: Mapped[str] = mapped_column(String(128), nullable=False)
     page_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     section_title: Mapped[str | None] = mapped_column(Text, nullable=True)
-    section_hierarchy: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), nullable=True
-    )
-    chunk_type: Mapped[str] = mapped_column(
-        String(32), default="text", nullable=False
-    )
+    section_hierarchy: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
+    chunk_type: Mapped[str] = mapped_column(String(32), default="text", nullable=False)
     custom_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=dict)
     language: Mapped[str | None] = mapped_column(String(16), nullable=True)
     token_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -203,9 +192,7 @@ class DocumentChunk(Base, TimestampMixin):
         foreign_keys=[parent_chunk_id],
     )
 
-    __table_args__ = (
-        Index("ix_chunks_document_position", "document_id", "chunk_index"),
-    )
+    __table_args__ = (Index("ix_chunks_document_position", "document_id", "chunk_index"),)
 
 
 class DocumentTable(Base, TimestampMixin):
@@ -290,20 +277,14 @@ class IngestionJob(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    status: Mapped[str] = mapped_column(
-        String(32), default="queued", nullable=False, index=True
-    )
+    status: Mapped[str] = mapped_column(String(32), default="queued", nullable=False, index=True)
     progress: Mapped[float] = mapped_column(Float, default=0.0)
     current_stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     max_retries: Mapped[int] = mapped_column(Integer, default=3)
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     document: Mapped["Document"] = relationship(
         "Document",
