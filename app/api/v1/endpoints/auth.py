@@ -1,22 +1,22 @@
 """Authentication endpoints — login, register, token refresh, logout."""
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cache.redis import redis_manager
-from app.core.config import settings
 from app.core.constants import REDIS_SESSION_PREFIX
 from app.core.dependencies import get_current_user_id, get_db
-from app.core.exceptions import AuthenticationError
 from app.core.logging import get_logger
 from app.core.security import decode_token
 from app.schemas.auth import (
     LoginRequest,
-    LoginResponse as LoginResponseSchema,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
+)
+from app.schemas.auth import (
+    LoginResponse as LoginResponseSchema,
 )
 from app.schemas.common import MessageResponse
 from app.schemas.user import UserResponse
@@ -40,7 +40,7 @@ async def login(
 ) -> LoginResponseSchema:
     """Authenticate a user and return JWT tokens."""
     service = AuthService(db)
-    return await service.authenticate(email=body.email, password=body.password)
+    return await service.authenticate(email=body.email, password=body.password)  # type: ignore[return-value]
 
 
 @router.post(
@@ -92,7 +92,6 @@ async def logout(
     """Log out the current user by blacklisting their token in Redis."""
     if credentials:
         try:
-            from jose import JWTError
 
             payload = decode_token(credentials.credentials)
             jti = payload.get("jti")

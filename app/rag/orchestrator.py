@@ -38,7 +38,7 @@ from app.rag.grounding import GroundingValidator
 from app.rag.metrics import record_rag_metrics
 from app.rag.prompt_builder import PromptBuilder
 from app.rag.response_validator import ResponseValidator
-from app.rag.schemas import CitationInfo, RAGChunk, RAGResponse
+from app.rag.schemas import RAGChunk, RAGResponse
 from app.rag.token_budget import TokenBudget
 from app.retrieval.schemas import RetrievedChunk
 from app.retrieval.services.retrieval_service import RetrievalService
@@ -334,7 +334,7 @@ class RAGOrchestrator:
 
             async with self.client.stream("POST", self._llm_api_url, json=llm_payload) as response:
                 if response.status_code != 200:
-                    error_bytes = await response.aread()
+                    await response.aread()
                     yield {"type": "error", "message": f"LLM error: HTTP {response.status_code}"}
                     return
 
@@ -474,7 +474,8 @@ class RAGOrchestrator:
                 if response.status_code != 200:
                     error_text = await response.aread()
                     raise RAGLLMError(
-                        f"LLM returned HTTP {response.status_code}: {error_text[:200]}"
+                        f"LLM returned HTTP {response.status_code}: "
+                        f"{error_text[:200].decode('utf-8', errors='replace')}"
                     )
 
                 async for line in response.aiter_lines():
@@ -544,7 +545,7 @@ class _Timer:
     def __init__(self) -> None:
         self.duration: float = 0.0
 
-    def __enter__(self) -> "_Timer":
+    def __enter__(self) -> _Timer:
         self._start = time.monotonic()
         return self
 

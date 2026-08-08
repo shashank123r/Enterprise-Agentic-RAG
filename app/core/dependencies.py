@@ -7,12 +7,12 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 import structlog
-from fastapi import Depends, Request
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import Permission, Role, ROLE_PERMISSIONS
+from app.core.constants import ROLE_PERMISSIONS, Permission, Role
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.security import decode_token
 from app.db.session import async_session_factory
@@ -22,6 +22,8 @@ from app.vector_stores import VectorStore
 from app.vector_stores.collection_manager import CollectionManager
 from app.vector_stores.factory import (
     get_collection_manager as _get_collection_manager,
+)
+from app.vector_stores.factory import (
     get_vector_store as _get_vector_store,
 )
 
@@ -43,13 +45,13 @@ async def get_storage() -> StorageProvider:
 # ── Vector Store DI ───────────────────────────
 
 
-async def get_vector_store() -> AsyncGenerator[VectorStore, None]:
+async def get_vector_store() -> AsyncGenerator[VectorStore]:
     """FastAPI dependency — provides the singleton VectorStore."""
     async for store in _get_vector_store():
         yield store
 
 
-async def get_collection_manager() -> AsyncGenerator[CollectionManager, None]:
+async def get_collection_manager() -> AsyncGenerator[CollectionManager]:
     """FastAPI dependency — provides the CollectionManager."""
     async for manager in _get_collection_manager():
         yield manager
@@ -59,7 +61,7 @@ async def get_collection_manager() -> AsyncGenerator[CollectionManager, None]:
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """Provide an async database session.
 
     Yields:

@@ -76,10 +76,10 @@ class ContextBuilder:
 
         # Step 4: Apply token budget
         if budget:
-            trimmed, exceeded = self._apply_budget(merged, budget)
+            trimmed, _exceeded = self._apply_budget(merged, budget)
         else:
             trimmed = merged
-            exceeded = False
+            _exceeded = False
 
         # Step 5: Build context text and citations
         context_parts: list[str] = []

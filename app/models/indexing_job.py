@@ -8,7 +8,7 @@ Statuses: queued → processing → embedding → writing → completed
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, Float, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 

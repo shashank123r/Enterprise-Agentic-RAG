@@ -7,7 +7,6 @@ Currently uses the centralized metrics system from app.core.metrics.
 from __future__ import annotations
 
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 

@@ -10,9 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 from starlette.responses import Response
-from starlette.testclient import TestClient as StarletteClient
 
 from app.middleware.rate_limit import RateLimitMiddleware
 
@@ -177,15 +175,16 @@ class TestRateLimitMiddleware:
 
             captured_key: list[str] = []
 
-            original_incr = mock_redis.incr.side_effect
-
             async def capture_incr(key: str) -> int:
                 captured_key.append(key)
                 return 1
 
             mock_redis.incr = AsyncMock(side_effect=capture_incr)
 
-            await middleware.dispatch(mock_request, lambda r: Response("ok", 200))
+            async def _passthrough(r: Request) -> Response:
+                return Response("ok", 200)
+
+            await middleware.dispatch(mock_request, _passthrough)
 
         assert any(
             "10.0.0.1" in k for k in captured_key

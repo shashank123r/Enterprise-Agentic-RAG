@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from sqlalchemy import DateTime, MetaData
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 # Naming convention for constraints
 convention = {

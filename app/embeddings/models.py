@@ -4,18 +4,17 @@ Stores indexing job metadata, collection info, and model version tracking.
 Vectors themselves remain inside Milvus — never duplicated in PostgreSQL.
 """
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Float,
     ForeignKey,
-    Index,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -59,7 +58,7 @@ class IndexingJob(Base, TimestampMixin):
     max_retries: Mapped[int] = mapped_column(Integer, default=3)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=dict)
+    metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=dict)  # type: ignore[misc,assignment]
 
 
 class CollectionMetadata(Base, TimestampMixin):

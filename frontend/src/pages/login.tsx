@@ -44,14 +44,14 @@ export function LoginPage() {
       addNotification({
         type: "success",
         title: "Welcome back!",
-        message: `Signed in as ${response.user.name}`,
+        message: `Signed in as ${response.user.full_name ?? response.user.username}`,
       });
       navigate(from, { replace: true });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Invalid credentials. Please try again.";
+      const axiosDetail = (
+        error as { response?: { data?: { detail?: string } } }
+      )?.response?.data?.detail;
+      const message = axiosDetail ?? "Invalid credentials. Please try again.";
       addNotification({
         type: "error",
         title: "Login failed",

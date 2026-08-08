@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthStore>()(
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
-          console.warn("[Auth] Failed to rehydrate auth state:", error.message);
+          console.warn("[Auth] Failed to rehydrate auth state:", String(error));
         }
         state?.setIsLoading(false);
       },

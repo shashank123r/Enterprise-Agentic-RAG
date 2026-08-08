@@ -7,8 +7,6 @@ sections, and scores.
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.core.logging import get_logger
 from app.rag.schemas import CitationInfo
 from app.retrieval.schemas import RetrievedChunk

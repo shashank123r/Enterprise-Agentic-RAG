@@ -154,7 +154,7 @@ class TaskManager:
             tasks = list(self._tasks.values())
 
         if tasks:
-            done, pending = await asyncio.wait(tasks, timeout=timeout)
+            _done, pending = await asyncio.wait(tasks, timeout=timeout)
             if pending:
                 for t in pending:
                     logger.warning("Task did not finish during shutdown", task_name=t.get_name())

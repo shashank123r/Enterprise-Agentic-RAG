@@ -43,11 +43,11 @@ async def get_retrieval_service(
     """
     global _retrieval_service
     if _retrieval_service is None:
-        from app.retrieval.retrievers.dense import DenseRetriever
+        from app.retrieval.rerankers.cross_encoder import CrossEncoderReranker
         from app.retrieval.retrievers.bm25 import BM25Retriever
+        from app.retrieval.retrievers.dense import DenseRetriever
         from app.retrieval.retrievers.hybrid import HybridRetriever
         from app.retrieval.retrievers.parent_child import ParentChildRetriever
-        from app.retrieval.rerankers.cross_encoder import CrossEncoderReranker
         from app.retrieval.services.bm25_manager import BM25IndexManager
 
         bm25 = BM25Retriever()

@@ -5,16 +5,13 @@ Covers validation (15 checks), retry policy, batching, auth,
 health checks, and the provider factory.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 
 from app.embeddings.exceptions import (
-    EmbeddingAuthError,
     EmbeddingError,
-    EmbeddingServiceUnavailable,
-    EmbeddingTimeout,
 )
 from app.embeddings.providers.base import EmbeddingProvider, EmbeddingProviderInfo
 from app.embeddings.providers.nvidia_nim import NvidiaNIMEmbeddingProvider
@@ -221,7 +218,6 @@ class TestVectorValidation:
         mock_client: MagicMock,
     ) -> None:
         """NaN values in embedding should fail the batch."""
-        import math
 
         data = [
             {"object": "embedding", "index": 0, "embedding": [0.1, float("nan"), 0.3, 0.4]},
@@ -245,7 +241,6 @@ class TestVectorValidation:
         mock_client: MagicMock,
     ) -> None:
         """Inf values in embedding should fail the batch."""
-        import math
 
         data = [
             {"object": "embedding", "index": 0, "embedding": [0.1, float("inf"), 0.3, 0.4]},

@@ -40,7 +40,6 @@ _SYNONYMS: dict[str, list[str]] = {
     "cloud": ["aws", "azure", "gcp", "hosted", "saas"],
     "algorithm": ["method", "procedure", "technique", "logic"],
     "model": ["framework", "architecture", "approach", "system"],
-    "performance": ["speed", "throughput", "latency", "efficiency"],
     "scalability": ["elasticity", "capacity", "growth", "expansion"],
     # AI/ML
     "machine learning": ["ml", "deep learning", "artificial intelligence", "neural network"],

@@ -134,11 +134,9 @@ async def retry_dead_letter(ctx: dict[str, Any]) -> int:
         if len(parts) >= 4:
             document_id, file_path, mime_type, user_id = parts[0], parts[1], parts[2], parts[3]
             # Re-queue for processing
-            from arq import create_pool
 
-            pool = await redis
             await redis.lpush(
-                f"arq:queue",
+                "arq:queue",
                 f"process_document({document_id}, {file_path}, {mime_type}, {user_id})",
             )
             count += 1

@@ -5,10 +5,10 @@ from __future__ import annotations
 import pytest
 
 from app.ingestion.chunking import (
+    ChunkingPipeline,
     CodeAwareChunker,
     OCRChunker,
     ParentChildChunker,
-    ChunkingPipeline,
 )
 
 

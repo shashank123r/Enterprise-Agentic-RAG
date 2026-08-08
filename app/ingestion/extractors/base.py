@@ -7,7 +7,6 @@ asyncio event loop is never blocked during document processing.
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from app.ingestion.executor import run_in_executor
 from app.ingestion.extractors import ExtractionResult
 
 

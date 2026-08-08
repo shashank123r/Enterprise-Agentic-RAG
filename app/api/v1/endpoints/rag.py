@@ -11,13 +11,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
-from app.core.dependencies import get_db
+from app.api.v1.endpoints.retrieval import get_retrieval_service
 from app.rag.exceptions import RAGGroundingError, RAGLLMError, RAGLLMUnavailable
 from app.rag.orchestrator import RAGOrchestrator
-from app.rag.schemas import RAGRequest, RAGResponse, ValidateRequest, ValidateResponse
 from app.rag.response_validator import ResponseValidator
+from app.rag.schemas import RAGRequest, RAGResponse, ValidateRequest, ValidateResponse
 from app.retrieval.services.retrieval_service import RetrievalService
-from app.api.v1.endpoints.retrieval import get_retrieval_service
 
 router = APIRouter(prefix="/chat", tags=["rag"])
 
@@ -142,7 +141,7 @@ async def validate_answer(
     from app.retrieval.schemas import RetrievedChunk
 
     chunks = [
-        RetrievedChunk(
+        RetrievedChunk(  # type: ignore[call-arg]
             chunk_id=c.chunk_id,
             document_id=c.document_id,
             text=c.text_preview,

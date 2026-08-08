@@ -15,14 +15,14 @@ from typing import Any
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.embeddings.cache import EmbeddingCacheService
-from app.embeddings.providers.base import EmbeddingProvider
-from app.vector_stores.base import VectorRecord, VectorStore
 from app.embeddings.exceptions import (
     DuplicateInputIdError,
     EmbeddingError,
     UnsupportedLanguageError,
 )
-from app.vector_stores.exceptions import VectorDimensionMismatch, BatchInsertError
+from app.embeddings.providers.base import EmbeddingProvider
+from app.vector_stores.base import VectorRecord, VectorStore
+from app.vector_stores.exceptions import BatchInsertError, VectorDimensionMismatch
 
 logger = get_logger(__name__)
 
@@ -283,7 +283,7 @@ class BatchIndexer:
         failed_count = 0
 
         for i, chunk in enumerate(batch):
-            vec = vectors[i]
+            vec = vectors[i]  # type: ignore[assignment]
             if vec is None:
                 failed_count += 1
                 continue

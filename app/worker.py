@@ -10,7 +10,7 @@ Or via Docker::
 """
 
 from app.core.config import settings
-from app.core.logging import setup_logging, get_logger
+from app.core.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,11 @@ class WorkerSettings:
         arq app.worker.WorkerSettings
     """
 
-    from app.ingestion.tasks import process_document, cleanup_temp_files, retry_dead_letter
+    from app.ingestion.tasks import (  # type: ignore[misc]
+        cleanup_temp_files,
+        process_document,
+        retry_dead_letter,
+    )
 
     functions = [process_document, cleanup_temp_files, retry_dead_letter]
     redis_settings = {

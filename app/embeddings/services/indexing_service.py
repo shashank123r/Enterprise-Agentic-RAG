@@ -382,7 +382,6 @@ class IndexingService:
         Returns:
             Dict with 'healthy', 'provider', 'model', 'latency_ms'.
         """
-        import time
 
         start = time.monotonic()
         healthy = await self._provider.health_check()
@@ -498,7 +497,7 @@ class IndexingService:
                     logger.error("Job not found for processing", job_id=job_id)
                     return {"indexed": 0, "failed": 0, "cancelled": False}
 
-                total = job.total_chunks or len(chunks)
+                _total = job.total_chunks or len(chunks)
 
                 # Check for checkpoint resume
                 resume_from = 0
@@ -616,7 +615,6 @@ class IndexingService:
         """
         # This method is called from the ARQ worker which already has a DB session.
         # The actual pipeline execution is delegated.
-        from app.core.config import settings
 
         indexer = BatchIndexer(
             embedding_provider=self._provider,
@@ -633,4 +631,4 @@ class IndexingService:
         return result
 
 
-from app.db.session import async_session_factory  # noqa: E402, F811
+from app.db.session import async_session_factory

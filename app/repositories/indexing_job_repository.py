@@ -4,7 +4,7 @@ Supports full CRUD, atomic status transitions, checkpoint persistence,
 progress updates, and querying active/failed/retryable jobs.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select, update
@@ -76,7 +76,7 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
 
         update_values: dict[str, Any] = {"status": new_status}
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if new_status == "processing" and job.started_at is None:
             update_values["started_at"] = now
         if new_status == "completed":
@@ -184,7 +184,7 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
             update_values["error_details"] = error_details
 
         if not has_retries_left:
-            update_values["completed_at"] = datetime.now(timezone.utc)
+            update_values["completed_at"] = datetime.now(UTC)
 
         stmt = (
             update(IndexingJob)
@@ -292,4 +292,4 @@ class IndexingJobRepository(BaseRepository[IndexingJob]):
 
         stmt = select(IndexingJob.status, func.count(IndexingJob.id)).group_by(IndexingJob.status)
         result = await self.db.execute(stmt)
-        return dict(result.all())
+        return dict(result.all())  # type: ignore[arg-type]

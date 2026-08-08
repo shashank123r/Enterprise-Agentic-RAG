@@ -54,6 +54,7 @@ RUN pip install --upgrade pip && \
 COPY --chown=rag:rag alembic.ini .
 COPY --chown=rag:rag alembic/ alembic/
 COPY --chown=rag:rag app/ app/
+COPY --chown=rag:rag scripts/ scripts/
 
 RUN mkdir -p logs uploads data && \
     chown -R rag:rag logs uploads data

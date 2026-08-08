@@ -5,12 +5,12 @@ and citation merging into a single orchestrated pipeline.
 """
 
 from app.rag.orchestrator import RAGOrchestrator
-from app.rag.schemas import RAGRequest, RAGResponse, RAGChunk, CitationInfo
+from app.rag.schemas import CitationInfo, RAGChunk, RAGRequest, RAGResponse
 
 __all__ = [
+    "CitationInfo",
+    "RAGChunk",
     "RAGOrchestrator",
     "RAGRequest",
     "RAGResponse",
-    "RAGChunk",
-    "CitationInfo",
 ]

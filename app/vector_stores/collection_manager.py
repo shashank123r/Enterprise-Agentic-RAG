@@ -6,17 +6,13 @@ its own collection or a versioned collection namespace.
 """
 
 import re
-from datetime import datetime, timezone
 from typing import Any
 
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.vector_stores.base import VectorStore
 from app.vector_stores.exceptions import (
     CollectionAlreadyExists,
     CollectionNotFound,
-    CollectionNotReady,
-    IndexError_,
     VectorStoreError,
 )
 

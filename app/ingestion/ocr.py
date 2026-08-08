@@ -37,8 +37,8 @@ class OCRProcessor:
         lang = self._language
 
         def _do() -> tuple[str, bool]:
-            from pdf2image import convert_from_path
             import pytesseract
+            from pdf2image import convert_from_path
 
             with TemporaryDirectory() as tmpdir:
                 images = convert_from_path(
@@ -70,9 +70,10 @@ class OCRProcessor:
         lang = self._language
 
         def _do() -> tuple[str, bool]:
-            from PIL import Image
-            import pytesseract
             import io
+
+            import pytesseract
+            from PIL import Image
 
             image = Image.open(io.BytesIO(image_data))
             text = pytesseract.image_to_string(image, config=f"--oem 3 --psm 6 -l {lang} --dpi 300")
@@ -91,8 +92,8 @@ class OCRProcessor:
         lang = self._language
 
         def _do() -> tuple[dict[int, str], bool]:
-            from pdf2image import convert_from_path
             import pytesseract
+            from pdf2image import convert_from_path
 
             results: dict[int, str] = {}
             ocr_applied = False

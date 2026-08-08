@@ -33,16 +33,11 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          query: ["@tanstack/react-query"],
-          motion: ["framer-motion"],
-          ui: [
-            "lucide-react",
-            "class-variance-authority",
-            "tailwind-merge",
-            "clsx",
-          ],
+        manualChunks: (id: string) => {
+          if (["react", "react-dom", "react-router-dom"].some((p) => id.includes(`/node_modules/${p}/`))) return "vendor";
+          if (id.includes("/node_modules/@tanstack/")) return "query";
+          if (id.includes("/node_modules/framer-motion/")) return "motion";
+          if (["lucide-react", "class-variance-authority", "tailwind-merge", "clsx"].some((p) => id.includes(`/node_modules/${p}/`))) return "ui";
         },
       },
     },

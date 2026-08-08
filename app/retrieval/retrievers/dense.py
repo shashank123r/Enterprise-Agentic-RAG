@@ -6,7 +6,6 @@ then searches Milvus for the nearest neighbors.
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from app.core.logging import get_logger

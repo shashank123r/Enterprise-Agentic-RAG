@@ -7,18 +7,17 @@ call delegates to the injected StorageProvider.
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.status import HTTP_413_CONTENT_TOO_LARGE, HTTP_413_REQUEST_ENTITY_TOO_LARGE
+from starlette.status import HTTP_413_CONTENT_TOO_LARGE
 
 from app.core.config import settings
-from app.core.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, ALLOWED_DOCUMENT_TYPES
-from app.core.dependencies import get_current_user_id, get_db, get_storage, require_role
-from app.core.constants import Role
-from app.core.exceptions import NotFoundError, ConflictError, ValidationError
+from app.core.constants import ALLOWED_DOCUMENT_TYPES, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from app.core.dependencies import get_current_user_id, get_db, get_storage
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.ingestion.executor import run_in_executor
-from app.ingestion.pipeline import IngestionPipeline, compute_checksum, validate_file
+from app.ingestion.pipeline import validate_file
 from app.ingestion.repository import (
     DocumentChunkRepository,
     DocumentImageRepository,
@@ -376,11 +375,12 @@ async def replace_document(
     content = await file.read()
     max_size = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
     if len(content) > max_size:
-        raise HTTPException(status_code=HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large")
+        raise HTTPException(status_code=HTTP_413_CONTENT_TOO_LARGE, detail="File too large")
 
     # Detect MIME type and compute checksum via StorageProvider
-    import magic
     import hashlib
+
+    import magic
 
     def _detect_and_hash() -> tuple[str, str]:
         mime = magic.from_buffer(content[:2048], mime=True)

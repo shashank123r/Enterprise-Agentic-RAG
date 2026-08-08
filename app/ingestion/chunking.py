@@ -28,10 +28,63 @@ logger = get_logger(__name__)
 # Handles abbreviations (e.g., Dr., Fig., vs., i.e.) and avoids splitting on
 # decimal numbers (3.14), section references (Sec. 3.1), etc.
 _ABBREV = frozenset(
-    "dr mr mrs ms prof sr jr rev gen lt col sgt pvt est etc vs eg ie "
-    "fig fig no vol pp ed eds sec sect ch pt approx approx dept govt "
-    "inc corp ltd llc jan feb mar apr jun jul aug sep oct nov dec "
-    "mon tue wed thu fri sat sun".split()
+    [
+        "dr",
+        "mr",
+        "mrs",
+        "ms",
+        "prof",
+        "sr",
+        "jr",
+        "rev",
+        "gen",
+        "lt",
+        "col",
+        "sgt",
+        "pvt",
+        "est",
+        "etc",
+        "vs",
+        "eg",
+        "ie",
+        "fig",
+        "fig",
+        "no",
+        "vol",
+        "pp",
+        "ed",
+        "eds",
+        "sec",
+        "sect",
+        "ch",
+        "pt",
+        "approx",
+        "approx",
+        "dept",
+        "govt",
+        "inc",
+        "corp",
+        "ltd",
+        "llc",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun",
+    ]
 )
 
 _SENTENCE_SPLIT_RE = re.compile(r"(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=[.!?])\s+(?=[A-Z\"‘“¿¡])")
@@ -279,7 +332,7 @@ class MarkdownAwareChunker(ChunkingStrategy):
         current_size = 0
         current_heading: str | None = None
         in_code_block = False
-        code_lang: str | None = None
+        _code_lang: str | None = None
 
         for line in lines:
             # Detect code fence
@@ -287,7 +340,7 @@ class MarkdownAwareChunker(ChunkingStrategy):
             if fence_match:
                 in_code_block = not in_code_block
                 if in_code_block:
-                    code_lang = fence_match.group(2) or None
+                    _code_lang = fence_match.group(2) or None
 
             heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
             if heading_match and not in_code_block:
@@ -652,7 +705,7 @@ class AdaptiveChunker(ChunkingStrategy):
         lines = text.split("\n")
         if not lines:
             return 1.0
-        dense = sum(1 for l in lines if any(p.match(l) for p in self._DENSE_RE))
+        dense = sum(1 for ln in lines if any(p.match(ln) for p in self._DENSE_RE))
         ratio = dense / len(lines)
         return max(0.3, 1.0 - ratio * 0.7)
 

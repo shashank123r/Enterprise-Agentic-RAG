@@ -12,7 +12,8 @@ Usage:
 from __future__ import annotations
 
 import time
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from app.core.logging import get_logger
 from app.evaluation.metrics import (
@@ -230,7 +231,6 @@ class RAGEvaluator:
         cr = context_recall(retrieved_chunk_ids, query.reference_answer, chunk_texts)
 
         # Citation coverage
-        from app.rag.grounding import GroundingValidator
         from app.rag.grounding import _split_sentences
 
         sentences = _split_sentences(generated)

@@ -26,11 +26,11 @@ export function ProfilePage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <div className="flex size-14 items-center justify-center rounded-full bg-brand-50 text-xl font-bold text-brand-600 dark:bg-brand-950 dark:text-brand-400">
-          {(user.name ?? user.email ?? "U").slice(0, 2).toUpperCase()}
+          {(user.full_name ?? user.username ?? user.email ?? "U").slice(0, 2).toUpperCase()}
         </div>
         <div>
           <h1 className="text-xl font-bold text-surface-900 dark:text-surface-50">
-            {user.name ?? "User"}
+            {user.full_name ?? user.username ?? "User"}
           </h1>
           <p className="mt-0.5 text-sm text-surface-500">{user.email}</p>
         </div>

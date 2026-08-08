@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import NotFoundError
 from app.repositories.user_repository import UserRepository
 from app.schemas.common import PaginatedResponse
 from app.schemas.user import UserAdminUpdate, UserResponse, UserUpdate

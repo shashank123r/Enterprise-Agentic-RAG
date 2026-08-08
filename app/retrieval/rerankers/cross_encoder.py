@@ -14,7 +14,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.retrieval.exceptions import RerankerError, RerankerUnavailable
+from app.retrieval.exceptions import RerankerError
 from app.retrieval.metrics import RetrievalTimer, record_reranker_metrics
 from app.retrieval.rerankers.base import Reranker
 from app.retrieval.schemas import RetrievalCandidate

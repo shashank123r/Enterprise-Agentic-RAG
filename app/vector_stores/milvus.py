@@ -8,7 +8,6 @@ business logic depends only on the abstract VectorStore interface.
 import asyncio
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone
 from functools import partial
 from typing import Any, TypeVar
 
@@ -21,19 +20,15 @@ from pymilvus import (
     connections,
     utility,
 )
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.vector_stores.base import VectorRecord, VectorSearchResult, VectorStore
 from app.vector_stores.exceptions import (
     BatchInsertError,
-    CollectionNotReady,
     CollectionNotFound,
     VectorDimensionMismatch,
     VectorStoreAuthError,
     VectorStoreError,
-    VectorStoreTimeout,
     VectorStoreUnavailable,
 )
 
@@ -748,7 +743,6 @@ class MilvusVectorStore(VectorStore):
         Returns:
             List of dicts suitable for collection.insert().
         """
-        now = datetime.now(timezone.utc).isoformat()
         entities: list[dict[str, Any]] = []
 
         for record in records:

@@ -43,7 +43,7 @@ class ColBERTReranker(Reranker):
         timeout: int = 60,
         max_chunks_per_request: int = 50,
     ) -> None:
-        self._api_url = (api_url or f"{str(settings.NIM_RERANKING_URL)}/colbert").rstrip("/")
+        self._api_url = (api_url or f"{settings.NIM_RERANKING_URL!s}/colbert").rstrip("/")
         self._api_key = api_key or settings.NIM_API_KEY
         self._model = model
         self._timeout = timeout

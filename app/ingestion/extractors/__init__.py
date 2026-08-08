@@ -25,7 +25,7 @@ class ExtractorRegistry:
     """
 
     def __init__(self) -> None:
-        self._registry: dict[str, type["BaseExtractor"]] = {}
+        self._registry: dict[str, type[BaseExtractor]] = {}
 
     def register(self, *mime_types: str):
         """Decorator to register an extractor for one or more MIME types."""
@@ -109,8 +109,8 @@ class TableResult:
 
     def to_csv(self) -> str:
         """Convert the table to CSV format."""
-        import io
         import csv
+        import io
 
         output = io.StringIO()
         writer = csv.writer(output)
@@ -182,23 +182,25 @@ from app.ingestion.extractors.base import BaseExtractor
 
 # Import all extractors to trigger registration
 from app.ingestion.extractors import (
-    pdf,
-    docx,
-    pptx,
-    xlsx,
     csv_extractor,
-    markdown as markdown_extractor,
+    docx,
     html_extractor,
     json_extractor,
+    pdf,
+    pptx,
     txt,
+    xlsx,
+)
+from app.ingestion.extractors import (
+    markdown as markdown_extractor,
 )
 
 __all__ = [
     "BaseExtractor",
-    "ExtractorRegistry",
-    "extractor_registry",
     "ExtractionResult",
+    "ExtractorRegistry",
+    "ImageResult",
     "PageResult",
     "TableResult",
-    "ImageResult",
+    "extractor_registry",
 ]

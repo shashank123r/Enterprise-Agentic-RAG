@@ -26,10 +26,62 @@ _SUPPORT_THRESHOLD = 0.12
 _MIN_SENTENCE_LEN = 30
 # Stopwords excluded from TF-IDF
 _STOPWORDS = frozenset(
-    "a an the and or but in on at to for of with by from that this "
-    "is are was were be been being have has had do does did will "
-    "would could should may might shall can what when where who why "
-    "how which whom whose these those it its they them their".split()
+    [
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "that",
+        "this",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "shall",
+        "can",
+        "what",
+        "when",
+        "where",
+        "who",
+        "why",
+        "how",
+        "which",
+        "whom",
+        "whose",
+        "these",
+        "those",
+        "it",
+        "its",
+        "they",
+        "them",
+        "their",
+    ]
 )
 
 
@@ -193,13 +245,12 @@ class GroundingValidator:
 
                     if best_sim >= self._threshold:
                         evidence_map[sentence[:60]] = best_chunk_id
-                    else:
-                        # Only flag as unsupported if it makes a factual claim
-                        if self._is_factual_claim(sentence) and not admits_no_info:
-                            unsupported_statements.append(sentence[:120])
-                            issues.append(
-                                f'Low grounding confidence ({best_sim:.2f}) for: "{sentence[:80]}..."'
-                            )
+                    # Only flag as unsupported if it makes a factual claim
+                    elif self._is_factual_claim(sentence) and not admits_no_info:
+                        unsupported_statements.append(sentence[:120])
+                        issues.append(
+                            f'Low grounding confidence ({best_sim:.2f}) for: "{sentence[:80]}..."'
+                        )
 
                 if support_scores:
                     overall_confidence = round(sum(support_scores) / len(support_scores), 3)

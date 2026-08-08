@@ -217,7 +217,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
         except asyncio.CancelledError:
             # Cancel all remaining in-flight tasks and clean up
             for t in tasks:
-                t.cancel()
+                t.cancel()  # type: ignore[attr-defined]
             await asyncio.gather(*tasks, return_exceptions=True)
             get_metrics().increment("embedding.batch_cancelled", tags={"model": self._model})
             raise  # Preserve cancellation semantics
@@ -253,7 +253,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             self._validate_batch_response(batch_texts, vectors, token_counts, batch_start_idx)
 
             # Validate every vector in the batch
-            for i, vec in enumerate(vectors):
+            for _i, vec in enumerate(vectors):
                 self._validate_vector(vec)
 
             # Check for duplicate embeddings within the batch
@@ -621,7 +621,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
         if metadata:
             seen_ids: set[str] = set()
             duplicate_ids: list[str] = []
-            for i, meta in enumerate(metadata):
+            for _i, meta in enumerate(metadata):
                 doc_id = meta.get("id") or meta.get("chunk_id") or meta.get("document_id")
                 if doc_id:
                     if doc_id in seen_ids:
@@ -687,7 +687,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
             )
 
         for i, val in enumerate(vector):
-            if val != val:
+            if val != val:  # noqa: PLR0124
                 raise EmbeddingError(
                     f"NaN value at index {i} in embedding vector",
                     code="nan_embedding",

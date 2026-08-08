@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.rag.grounding import GroundingValidator, _cosine_similarity, _tfidf_vector, _build_idf
+from app.rag.grounding import GroundingValidator, _build_idf, _cosine_similarity, _tfidf_vector
 from app.retrieval.schemas import RetrievedChunk
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.rag.token_budget import TokenBudget, _MODEL_CONTEXT_LIMITS
+from app.rag.token_budget import _MODEL_CONTEXT_LIMITS, TokenBudget
 
 
 class TestTokenBudget:

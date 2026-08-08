@@ -7,7 +7,6 @@ run without any network access or infrastructure.
 from __future__ import annotations
 
 import json
-from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -15,7 +14,7 @@ import pytest
 
 from app.rag.orchestrator import RAGOrchestrator
 from app.rag.schemas import RAGResponse
-from app.retrieval.schemas import RetrievedChunk, RetrievalResult
+from app.retrieval.schemas import RetrievalResult, RetrievedChunk
 
 # ---------------------------------------------------------------------------
 # Fixtures

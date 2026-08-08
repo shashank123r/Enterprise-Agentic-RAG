@@ -29,6 +29,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     volumes:
       - uploads:/app/uploads
       - logs:/app/logs
@@ -110,9 +112,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: alembic upgrade head
-    profiles:
-      - migration
+    command: sh -c "alembic upgrade head && python scripts/seed_admin.py"
     networks:
       - rag-network
 

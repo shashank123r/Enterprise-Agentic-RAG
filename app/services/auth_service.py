@@ -1,7 +1,6 @@
 """Authentication service — login, register, token refresh, user lookup."""
 
 from jose import JWTError
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
@@ -137,7 +136,7 @@ class AuthService:
             ) from e
 
         user_id = payload.get("sub")
-        user = await self.repository.get_by_id(user_id)
+        user = await self.repository.get_by_id(user_id)  # type: ignore[arg-type]
         if user is None:
             raise AuthenticationError(
                 message="User not found",

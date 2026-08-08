@@ -6,10 +6,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.cache.redis import redis_manager
 from app.core.config import settings
 from app.core.constants import REDIS_RATE_LIMIT_PREFIX
 from app.core.logging import get_logger
-from app.cache.redis import redis_manager
 
 logger = get_logger(__name__)
 
@@ -48,18 +48,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             # Check BEFORE processing the request to avoid wasted compute
             if count > max_requests:
-                from fastapi.responses import ORJSONResponse
+                import json
+
                 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
 
                 remaining_secs = window - (now % window)
-                return ORJSONResponse(
-                    status_code=HTTP_429_TOO_MANY_REQUESTS,
-                    content={
-                        "error": {
-                            "code": "rate_limit_exceeded",
-                            "message": "Rate limit exceeded. Try again shortly.",
+                return Response(
+                    content=json.dumps(
+                        {
+                            "error": {
+                                "code": "rate_limit_exceeded",
+                                "message": "Rate limit exceeded. Try again shortly.",
+                            }
                         }
-                    },
+                    ),
+                    status_code=HTTP_429_TOO_MANY_REQUESTS,
+                    media_type="application/json",
                     headers={
                         "X-RateLimit-Limit": str(max_requests),
                         "X-RateLimit-Remaining": "0",

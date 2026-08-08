@@ -7,23 +7,23 @@ and collection lifecycle management.
 """
 
 from app.embeddings.exceptions import (
+    CacheError,
+    CollectionError,
+    CollectionNotFound,
     EmbeddingError,
     EmbeddingServiceUnavailable,
     EmbeddingTimeout,
     IndexingError,
     IndexingJobNotFound,
-    CollectionNotFound,
-    CollectionError,
-    CacheError,
 )
 
 __all__ = [
+    "CacheError",
+    "CollectionError",
+    "CollectionNotFound",
     "EmbeddingError",
     "EmbeddingServiceUnavailable",
     "EmbeddingTimeout",
     "IndexingError",
     "IndexingJobNotFound",
-    "CollectionNotFound",
-    "CollectionError",
-    "CacheError",
 ]

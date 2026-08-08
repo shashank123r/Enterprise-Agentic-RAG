@@ -1,5 +1,6 @@
 """TXT extractor — all sync calls offloaded via run_in_executor."""
 
+from app.core.logging import get_logger
 from app.ingestion.executor import run_in_executor
 from app.ingestion.extractors import (
     BaseExtractor,
@@ -7,7 +8,6 @@ from app.ingestion.extractors import (
     PageResult,
     extractor_registry,
 )
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ class TxtExtractor(BaseExtractor):
         def _do() -> dict:
             content = self.file_path.read_text("utf-8", errors="replace")
             lines = content.splitlines()
-            non_empty = [l for l in lines if l.strip()]
+            non_empty = [ln for ln in lines if ln.strip()]
             return {
                 "title": self.file_path.stem,
                 "char_count": len(content),

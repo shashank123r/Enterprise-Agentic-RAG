@@ -10,8 +10,8 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.ingestion.cleaners import create_default_pipeline
 from app.ingestion.chunking import chunking_pipeline
+from app.ingestion.cleaners import create_default_pipeline
 from app.ingestion.detectors import language_detector
 from app.ingestion.extractors import ExtractionResult, extractor_registry
 from app.ingestion.models import DocumentChunk, DocumentImage, DocumentTable

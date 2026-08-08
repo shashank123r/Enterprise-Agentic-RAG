@@ -22,7 +22,7 @@ from app.embeddings.providers.factory import get_embedding_provider
 from app.embeddings.services.indexing_service import IndexingService
 from app.ingestion.repository import DocumentChunkRepository
 from app.repositories.indexing_job_repository import IndexingJobRepository
-from app.vector_stores.factory import get_vector_store, get_collection_manager
+from app.vector_stores.factory import get_collection_manager, get_vector_store
 
 logger = get_logger(__name__)
 
@@ -95,7 +95,7 @@ async def index_document(
         cache = EmbeddingCacheService()
 
         # Create IndexingService — no `db` parameter, constructor doesn't accept one
-        service = IndexingService(
+        _service = IndexingService(
             embedding_provider=provider,
             vector_store=store,
             collection_manager=manager,

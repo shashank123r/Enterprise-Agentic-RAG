@@ -6,14 +6,15 @@ for the BM25 keyword index. Supports building from DocumentChunkRepository.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.ingestion.repository import DocumentChunkRepository
 from app.retrieval.exceptions import BM25IndexError
 from app.retrieval.retrievers.bm25 import BM25Retriever
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -63,7 +64,7 @@ class BM25IndexManager:
             from app.ingestion.repository import DocumentRepository
 
             doc_repo = DocumentRepository(db)
-            docs, total = await doc_repo.list_documents(page=1, size=10000, include_deleted=False)
+            docs, _total = await doc_repo.list_documents(page=1, size=10000, include_deleted=False)
 
             all_chunks: list[dict[str, Any]] = []
             for doc in docs:
@@ -91,7 +92,7 @@ class BM25IndexManager:
                 return {"total_docs": 0, "unique_tokens": 0, "avg_doc_length": 0.0}
 
             await self._retriever.build_index(all_chunks)
-            self._last_built_at = datetime.now(timezone.utc)
+            self._last_built_at = datetime.now(UTC)
             self._total_chunks_loaded = len(all_chunks)
             self._build_error = None
 
@@ -157,7 +158,7 @@ class BM25IndexManager:
         Returns:
             Dict with built status, doc count, last built time, and staleness info.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return {
             "index_built": self._retriever.is_index_built,
             "total_docs": self._retriever.index_size,

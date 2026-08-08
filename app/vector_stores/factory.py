@@ -5,7 +5,6 @@ New providers can be added without modifying business logic.
 """
 
 from collections.abc import AsyncGenerator
-from typing import Any
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -54,13 +53,10 @@ async def create_vector_store() -> VectorStore:
         )
         return store
 
-    else:
-        raise VectorStoreError(
-            f"Unknown vector store provider: '{provider}'. " f"Supported: milvus"
-        )
+    raise VectorStoreError(f"Unknown vector store provider: '{provider}'. " f"Supported: milvus")
 
 
-async def get_vector_store() -> AsyncGenerator[VectorStore, None]:
+async def get_vector_store() -> AsyncGenerator[VectorStore]:
     """FastAPI dependency — provides the singleton VectorStore.
 
     Usage::
@@ -79,7 +75,7 @@ async def get_vector_store() -> AsyncGenerator[VectorStore, None]:
         pass  # Connection lifecycle managed by lifespan
 
 
-async def get_collection_manager() -> AsyncGenerator[CollectionManager, None]:
+async def get_collection_manager() -> AsyncGenerator[CollectionManager]:
     """FastAPI dependency — provides the CollectionManager wrapper.
 
     Usage::
@@ -95,7 +91,7 @@ async def get_collection_manager() -> AsyncGenerator[CollectionManager, None]:
         async for store in get_vector_store():
             _collection_manager = CollectionManager(store)
             break
-    yield _collection_manager
+    yield _collection_manager  # type: ignore[misc]
 
 
 async def close_vector_store() -> None:

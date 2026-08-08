@@ -4,6 +4,7 @@ import re
 
 import markdown as md_lib
 
+from app.core.logging import get_logger
 from app.ingestion.executor import run_in_executor
 from app.ingestion.extractors import (
     BaseExtractor,
@@ -12,7 +13,6 @@ from app.ingestion.extractors import (
     TableResult,
     extractor_registry,
 )
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 

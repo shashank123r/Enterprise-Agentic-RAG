@@ -4,8 +4,8 @@ All exceptions extend AppException for consistent API error handling.
 """
 
 from starlette.status import (
-    HTTP_404_NOT_FOUND,
     HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
 )

@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ingestion.models import (
@@ -40,7 +40,7 @@ class DocumentRepository(BaseRepository[Document]):
         include_deleted: bool = False,
     ) -> tuple[list[Document], int]:
         """List documents with pagination and optional filters."""
-        conditions = [Document.is_deleted == include_deleted]  # noqa: E712
+        conditions = [Document.is_deleted == include_deleted]
         if status:
             conditions.append(Document.status == status)
         if user_id:

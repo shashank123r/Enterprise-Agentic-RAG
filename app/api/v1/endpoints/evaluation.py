@@ -48,8 +48,8 @@ async def run_evaluation(
 ) -> dict[str, Any]:
     """Run the RAG evaluation pipeline and return aggregated metrics."""
     try:
-        from app.evaluation.schemas import GoldenQuery
         from app.evaluation.evaluator import RAGEvaluator
+        from app.evaluation.schemas import GoldenQuery
 
         golden_queries = [
             GoldenQuery(

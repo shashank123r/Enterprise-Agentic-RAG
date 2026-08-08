@@ -18,16 +18,19 @@ from app.cache.redis import redis_manager
 from app.core.config import settings
 from app.core.exceptions import (
     AppException,
-    ConflictError,
-    NotFoundError,
-    ServiceUnavailableError,
-    ValidationError,
     app_exception_handler,
     http_exception_handler,
     unhandled_exception_handler,
     validation_exception_handler,
 )
 from app.core.logging import get_logger, setup_logging
+from app.db.session import async_session_factory, init_db, shutdown_db
+from app.embeddings.providers.factory import shutdown_embedding_provider
+from app.embeddings.services.indexing_service import shutdown_indexing_service
+from app.middleware.cors import setup_cors
+from app.middleware.logging import setup_request_logging
+from app.middleware.rate_limit import setup_rate_limiting
+from app.middleware.security import setup_security_headers
 from app.storage.exceptions import (
     StorageError,
     StorageFileNotFound,
@@ -35,21 +38,14 @@ from app.storage.exceptions import (
     StorageQuotaExceeded,
     StorageUnavailable,
 )
-from app.db.session import async_session_factory, init_db, shutdown_db
-from app.middleware.cors import setup_cors
-from app.middleware.logging import setup_request_logging
-from app.middleware.rate_limit import setup_rate_limiting
-from app.middleware.security import setup_security_headers
 from app.storage.factory import create_storage_provider, shutdown_storage_provider
-from app.embeddings.providers.factory import shutdown_embedding_provider
 from app.vector_stores.factory import close_vector_store
-from app.embeddings.services.indexing_service import shutdown_indexing_service
 
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Application lifespan — initialize and clean up resources."""
     # Startup
     setup_logging()
@@ -108,7 +104,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize IndexingService as application-scoped singleton
     try:
-        from app.vector_stores.collection_manager import CollectionManager
         from app.vector_stores.factory import get_collection_manager as _get_cm
 
         collection_manager = None
@@ -120,14 +115,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await init_indexing_service(
             embedding_provider=embedding_provider,
             vector_store=vector_store,
-            collection_manager=collection_manager,
+            collection_manager=collection_manager,  # type: ignore[arg-type]
         )
         logger.info("IndexingService initialized as application singleton")
     except Exception as e:
         logger.warning("IndexingService initialization failed (non-fatal)", exc_info=e)
 
     # Store session factory for health checks
-    async def get_health_db() -> AsyncGenerator[AsyncSession, None]:
+    async def get_health_db() -> AsyncGenerator[AsyncSession]:
         async with async_session_factory() as session:
             yield session
 
@@ -189,13 +184,13 @@ def create_app() -> FastAPI:
     setup_rate_limiting(app)
 
     # ── Exception Handlers ────────────────────
-    app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(Exception, unhandled_exception_handler)
+    app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
 
     from fastapi.exceptions import HTTPException, RequestValidationError
 
-    app.add_exception_handler(HTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 
     # ── Storage Exception Handlers ────────────
     @app.exception_handler(StorageFileNotFound)

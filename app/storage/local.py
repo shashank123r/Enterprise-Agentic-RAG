@@ -17,7 +17,6 @@ from app.storage.base import StorageProvider
 from app.storage.exceptions import (
     StorageFileNotFound,
     StoragePermissionDenied,
-    StorageQuotaExceeded,
 )
 from app.storage.models import StorageFileInfo
 
@@ -232,7 +231,7 @@ class LocalStorageProvider(StorageProvider):
 
         return await run_in_executor(_do)
 
-    async def rename(self, source: str, destination: str) -> str:
+    async def rename(self, source: str, destination: str) -> str:  # type: ignore[override]
         src_resolved = self._resolve(source)
         dst_resolved = self._resolve(destination)
 

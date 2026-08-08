@@ -3,8 +3,6 @@
 Uses asyncpg for async PostgreSQL connectivity.
 """
 
-from collections.abc import AsyncGenerator
-
 import orjson
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (

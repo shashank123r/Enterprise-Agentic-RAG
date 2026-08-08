@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Sequence
+from collections.abc import Sequence
 
 # ── Retrieval Metrics ──────────────────────────────────────────────────────
 
@@ -188,9 +188,51 @@ def _tokenize(text: str) -> set[str]:
     """Simple whitespace+punctuation tokenizer for overlap computation."""
     tokens = re.findall(r"\b[a-z0-9][a-z0-9\-']*\b", text.lower())
     stopwords = frozenset(
-        "a an the and or but in on at to for of with by from that this "
-        "is are was were be been have has had do does did will would "
-        "could should may might can what when where who why how which".split()
+        [
+            "a",
+            "an",
+            "the",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "that",
+            "this",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "can",
+            "what",
+            "when",
+            "where",
+            "who",
+            "why",
+            "how",
+            "which",
+        ]
     )
     return {t for t in tokens if t not in stopwords and len(t) >= 3}
 

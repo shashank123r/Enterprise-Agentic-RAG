@@ -10,12 +10,14 @@ from app.vector_stores.exceptions import (
     CollectionAlreadyExists,
     CollectionNotFound,
     CollectionNotReady,
-    IndexError_ as IndexError,
     VectorDimensionMismatch,
     VectorStoreAuthError,
     VectorStoreError,
     VectorStoreTimeout,
     VectorStoreUnavailable,
+)
+from app.vector_stores.exceptions import (
+    IndexError_ as IndexError,
 )
 from app.vector_stores.factory import get_collection_manager, get_vector_store
 

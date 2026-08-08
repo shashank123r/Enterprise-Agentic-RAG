@@ -4,9 +4,7 @@ Provides liveness, readiness, and detailed component health probes.
 """
 
 from fastapi import APIRouter, Request
-from redis.asyncio import Redis
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.logging import get_logger

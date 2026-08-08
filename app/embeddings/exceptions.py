@@ -7,7 +7,6 @@ from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_503_SERVICE_UNAVAILABLE,
-    HTTP_409_CONFLICT,
 )
 
 from app.core.exceptions import AppException

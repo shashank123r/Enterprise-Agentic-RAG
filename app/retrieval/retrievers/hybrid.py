@@ -11,7 +11,6 @@ Key improvements over naive sequential hybrid:
 from __future__ import annotations
 
 import asyncio
-import math
 from typing import Any
 
 from app.core.logging import get_logger
@@ -34,7 +33,7 @@ def _min_max_normalize(scores: dict[str, float]) -> dict[str, float]:
     vals = list(scores.values())
     lo, hi = min(vals), max(vals)
     if hi == lo:
-        return {k: 1.0 for k in scores}
+        return dict.fromkeys(scores, 1.0)
     span = hi - lo
     return {k: (v - lo) / span for k, v in scores.items()}
 
@@ -268,7 +267,7 @@ class HybridRetriever(Retriever):
         """
         import time as _time
 
-        now = _time.time()
+        _now = _time.time()
         # Collect available timestamps
         timestamps: dict[str, float] = {}
         seen: set[str] = set()

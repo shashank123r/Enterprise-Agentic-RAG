@@ -15,10 +15,8 @@ from typing import Any
 from app.core.logging import get_logger
 from app.embeddings.providers.base import EmbeddingProvider
 from app.retrieval.exceptions import (
-    BM25IndexError,
     RetrieverNotFound,
     RetrieverUnavailable,
-    RetrievalError,
 )
 from app.retrieval.metrics import RetrievalTimer, record_retrieval_metrics
 from app.retrieval.query.analyzer import QueryAnalyzer
@@ -36,7 +34,6 @@ from app.retrieval.services.bm25_manager import BM25IndexManager
 from app.retrieval.services.citation_builder import CitationBuilder
 from app.retrieval.services.context_builder import ContextBuilder
 from app.vector_stores.base import VectorStore
-from app.vector_stores.exceptions import CollectionNotFound
 
 logger = get_logger(__name__)
 
@@ -174,9 +171,9 @@ class RetrievalService:
                         if stats.get("exists"):
                             from app.core.config import settings
 
-                            expected_dim = settings.VECTOR_STORE_DIMENSION
+                            _expected_dim = settings.VECTOR_STORE_DIMENSION
                             schema = stats.get("schema", {})
-                            vector_field_type = schema.get("vector", "")
+                            _vector_field_type = schema.get("vector", "")
                             # Dimension is embedded in the vector field params
                             # Basic check: if collection exists, it was created with some dimension
                             # More detailed versioning would require custom metadata
@@ -326,7 +323,7 @@ class RetrievalService:
 
         # ── Step 4: Context building ───────────
         with RetrievalTimer("retrieval.build_context") as ct:
-            context_text, retrieved_chunks, citation_data = self._context_builder.build(
+            context_text, retrieved_chunks, _citation_data = self._context_builder.build(
                 candidates, max_tokens=max_context_tokens
             )
             metrics.context_build_ms = ct.elapsed_ms

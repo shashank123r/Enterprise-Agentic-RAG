@@ -12,7 +12,6 @@ from typing import Any
 from langdetect import detect as _detect_lang
 
 from app.core.logging import get_logger
-from app.retrieval.schemas import RetrievalCandidate
 
 logger = get_logger(__name__)
 

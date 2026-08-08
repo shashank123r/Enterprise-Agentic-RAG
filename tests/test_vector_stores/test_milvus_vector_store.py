@@ -12,14 +12,13 @@ to avoid requiring a running Milvus instance. Covers:
 - Factory and dependency injection
 """
 
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.vector_stores.base import VectorRecord, VectorStore
 from app.vector_stores.collection_manager import CollectionManager
 from app.vector_stores.exceptions import (
-    BatchInsertError,
     CollectionAlreadyExists,
     CollectionNotFound,
     VectorDimensionMismatch,
@@ -320,21 +319,23 @@ class TestMilvusVectorStore:
             patch(
                 "app.vector_stores.milvus.Collection", side_effect=MilvusException("create failed")
             ),
+            pytest.raises(VectorStoreError),
         ):
-            with pytest.raises(VectorStoreError):
-                await store.create_collection("fail_coll")
+            await store.create_collection("fail_coll")
 
     @pytest.mark.asyncio
     async def test_list_collections_failure(self, store: MilvusVectorStore) -> None:
         from pymilvus import MilvusException
 
         store._connected = True
-        with patch(
-            "app.vector_stores.milvus.utility.list_collections",
-            side_effect=MilvusException("list failed"),
+        with (
+            patch(
+                "app.vector_stores.milvus.utility.list_collections",
+                side_effect=MilvusException("list failed"),
+            ),
+            pytest.raises(VectorStoreError),
         ):
-            with pytest.raises(VectorStoreError):
-                await store.list_collections()
+            await store.list_collections()
 
     # ── Thread Safety ──────────────────────────
 
@@ -609,13 +610,13 @@ class TestVectorStoreFactory:
     @pytest.mark.asyncio
     async def test_close_vector_store(self) -> None:
         """Closing should call close() on the store."""
-        from app.vector_stores.factory import close_vector_store, _vector_store
+        from app.vector_stores.factory import close_vector_store
 
         mock_store = MagicMock(spec=VectorStore)
         mock_store.close = AsyncMock()
 
         # Inject mock store
-        import app.vector_stores.factory as factory
+        from app.vector_stores import factory
 
         factory._vector_store = mock_store
 

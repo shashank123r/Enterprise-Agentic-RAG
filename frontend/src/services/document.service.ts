@@ -150,3 +150,11 @@ export async function restoreVersion(id: string, version: number): Promise<void>
   // Backend doesn't expose this endpoint directly; uses replace endpoint
   throw new Error("Version restore not directly supported. Use replace endpoint.");
 }
+
+export const documentService = {
+  getDocument,
+  listDocuments,
+  deleteDocument,
+  uploadDocument,
+  uploadDocuments,
+};

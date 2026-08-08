@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 def _get_encoding(model_key: str):
     """Return a tiktoken encoding, cached per model key."""
     try:
-        import tiktoken  # noqa: PLC0415
+        import tiktoken
 
         # Map model families to tiktoken encodings
         _ENCODING_MAP = {
