@@ -39,7 +39,7 @@ RUN addgroup --system --gid 1001 rag && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         libpq-dev \
-        libmagic1 \
+        libmagic1t64 \
         curl \
         tesseract-ocr \
         tesseract-ocr-eng \
