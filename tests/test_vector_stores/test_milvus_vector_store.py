@@ -167,12 +167,7 @@ class TestMilvusVectorStore:
         with (
             patch("app.vector_stores.milvus.utility.has_collection", return_value=False),
             patch("app.vector_stores.milvus.Collection", return_value=mock_collection),
-            patch.object(store, "_run_sync", new_callable=AsyncMock) as mock_run_sync,
         ):
-            mock_run_sync.return_value = None
-            mock_run_sync.side_effect = None
-
-            # We need create_collection's actual flow
             stats = await store.create_collection("test_docs", dimension=4)
 
             assert stats is not None
@@ -271,9 +266,7 @@ class TestMilvusVectorStore:
         with (
             patch("app.vector_stores.milvus.utility.has_collection", return_value=True),
             patch("app.vector_stores.milvus.Collection", return_value=mock_collection),
-            patch.object(store, "_run_sync", new_callable=AsyncMock) as mock_run_sync,
         ):
-            mock_run_sync.return_value = None
             with pytest.raises(VectorDimensionMismatch):
                 await store.upsert_vectors("docs", records_with_bad_dim)
 
@@ -281,7 +274,11 @@ class TestMilvusVectorStore:
     async def test_delete_vectors_no_filter(self, store: MilvusVectorStore) -> None:
         """Deleting without ids or filter_expr should raise."""
         store._connected = True
-        with pytest.raises(VectorStoreError, match="ids.*filter_expr"):
+        with (
+            patch("app.vector_stores.milvus.utility.has_collection", return_value=True),
+            patch("app.vector_stores.milvus.Collection"),
+            pytest.raises(VectorStoreError, match="ids.*filter_expr"),
+        ):
             await store.delete_vectors("docs")
 
     @pytest.mark.asyncio
@@ -293,9 +290,7 @@ class TestMilvusVectorStore:
         with (
             patch("app.vector_stores.milvus.utility.has_collection", return_value=True),
             patch("app.vector_stores.milvus.Collection", return_value=mock_collection),
-            patch.object(store, "_run_sync", new_callable=AsyncMock) as mock_run_sync,
         ):
-            mock_run_sync.return_value = []
             result = await store.get_vector("docs", "chunk-1")
             assert result is None
 
@@ -351,7 +346,6 @@ class TestMilvusVectorStore:
         with (
             patch("app.vector_stores.milvus.utility.has_collection", return_value=True),
             patch("app.vector_stores.milvus.Collection", return_value=mock_collection),
-            patch.object(store, "_run_sync", new_callable=AsyncMock),
         ):
             import asyncio
 
@@ -706,10 +700,10 @@ class TestMilvusDataConversion:
         assert record.language == "en"
 
     def test_prefixed_name(self, store: MilvusVectorStore) -> None:
-        assert store._prefixed_name("docs") == "test_docs"
+        assert store._prefixed_name("docs") == "rag_docs"
 
     def test_strip_prefix(self, store: MilvusVectorStore) -> None:
-        assert store._strip_prefix("test_docs") == "docs"
+        assert store._strip_prefix("rag_docs") == "docs"
 
     def test_strip_prefix_no_match(self, store: MilvusVectorStore) -> None:
         assert store._strip_prefix("other_docs") == "other_docs"

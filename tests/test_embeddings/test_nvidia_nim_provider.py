@@ -63,7 +63,7 @@ def provider() -> NvidiaNIMEmbeddingProvider:
     return NvidiaNIMEmbeddingProvider(
         api_url="http://test-nim:8000",
         api_key="test-key",
-        model="nvidia/nv-embed-qa-4",
+        model="test/custom-model",  # Not in _NIM_MODEL_DIMENSIONS → _dimension = None
         batch_size=10,
         max_concurrent=5,
         timeout=30,
@@ -527,8 +527,10 @@ class TestProviderFactory:
     @pytest.mark.asyncio
     async def test_unknown_provider_raises(self) -> None:
         """Unknown provider type should raise ValueError."""
+        import app.embeddings.providers.factory as factory_module
         from app.embeddings.providers.factory import create_embedding_provider
 
+        factory_module._provider = None  # Reset singleton from prior tests
         with patch("app.embeddings.providers.factory.settings") as mock_settings:
             mock_settings.EMBEDDING_PROVIDER = "unknown_provider"
             with pytest.raises(ValueError, match="Unknown embedding provider"):

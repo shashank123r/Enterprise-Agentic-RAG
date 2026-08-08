@@ -96,7 +96,7 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
 
         self._semaphore = asyncio.Semaphore(self._max_concurrent)
         self._client: httpx.AsyncClient | None = None
-        self._dimension: int | None = self._lookup_dimension()
+        self._dimension: int | None = self._lookup_dimension(self._model)
         self._max_tokens: int = self._lookup_max_tokens()
         self._language_validation_enabled: bool = True
         self._supported_langs: list[str] = ["en"]
@@ -143,7 +143,6 @@ class NvidiaNIMEmbeddingProvider(EmbeddingProvider):
         metadata: list[dict[str, Any]] | None = None,
     ) -> BatchEmbeddingResult:
         """Embed document texts via NVIDIA NIM."""
-        self._validate_inputs(texts, metadata)
         return await self.batch_embed(texts, metadata=metadata)
 
     async def embed_query(self, text: str) -> EmbeddingResult:

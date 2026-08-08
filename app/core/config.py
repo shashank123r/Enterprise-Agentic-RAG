@@ -29,6 +29,7 @@ class Environment(StrEnum):
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
+    TEST = "test"
 
 
 class Settings(BaseSettings):
@@ -52,7 +53,6 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: str = Field(
         default="change-me",
-        min_length=32,
         description="Django-style secret key for general signing",
     )
     API_V1_PREFIX: str = "/api/v1"
@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     # ── Authentication ─────────────────────────
     JWT_SECRET_KEY: str = Field(
         default="change-me",
-        min_length=32,
         description="JWT signing key (must be strong in production)",
     )
     JWT_ALGORITHM: str = "HS256"
@@ -227,12 +226,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
-        """Ensure secrets are not defaults in production."""
+        """Ensure secrets are strong in production."""
         if self.ENVIRONMENT == Environment.PRODUCTION:
-            if self.SECRET_KEY == "change-me":
-                raise ValueError("SECRET_KEY must be changed from default in production")
-            if self.JWT_SECRET_KEY == "change-me":
-                raise ValueError("JWT_SECRET_KEY must be changed from default in production")
+            if self.SECRET_KEY == "change-me" or len(self.SECRET_KEY) < 32:
+                raise ValueError(
+                    "SECRET_KEY must be at least 32 chars and not default in production"
+                )
+            if self.JWT_SECRET_KEY == "change-me" or len(self.JWT_SECRET_KEY) < 32:
+                raise ValueError(
+                    "JWT_SECRET_KEY must be at least 32 chars and not default in production"
+                )
         return self
 
 
