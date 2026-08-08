@@ -53,10 +53,9 @@ logs/
 uploads/*
 data/
 
-# ── Docs & scripts (not needed in image) ─────
+# ── Docs & misc (not needed in image) ─────────
 README.md
 *.md
-scripts/
 Makefile
 run.sh
 run.ps1
