@@ -134,6 +134,9 @@ class ChunkResult:
         metadata: dict[str, Any] | None = None,
         language: str | None = None,
         code_language: str | None = None,
+        content_checksum: str | None = None,
+        token_count: int | None = None,
+        char_count: int | None = None,
     ) -> None:
         self.content = content
         self.chunk_index = chunk_index
@@ -145,19 +148,32 @@ class ChunkResult:
         self.metadata = metadata or {}
         self.language = language
         self.code_language = code_language  # "python", "sql", "javascript", etc.
+        self._content_checksum = content_checksum
+        self._token_count = token_count
+        self._char_count = char_count
 
     @property
     def content_checksum(self) -> str:
+        if self._content_checksum is not None:
+            return self._content_checksum
         return hashlib.sha256(self.content.encode("utf-8")).hexdigest()[:16]
 
     @property
     def char_count(self) -> int:
+        if self._char_count is not None:
+            return self._char_count
         return len(self.content)
+
+    @property
+    def token_count(self) -> int:
+        if self._token_count is not None:
+            return self._token_count
+        return len(self.content) // 4
 
     @property
     def token_count_approx(self) -> int:
         """Approximate token count — use TokenBudget.count_tokens() for precision."""
-        return len(self.content) // 4
+        return self.token_count
 
 
 # ── Base strategy ──────────────────────────────────────────────────────────
@@ -505,7 +521,7 @@ class CodeAwareChunker(ChunkingStrategy):
         chunks: list[ChunkResult] = []
         for i in range(1, len(split_points)):
             segment = text[split_points[i - 1] : split_points[i]].strip()
-            if not segment or len(segment) < self.min_chunk_size:
+            if not segment:
                 continue
             if len(segment) > self.max_chunk_size:
                 # Recursively split large functions at blank lines
@@ -818,6 +834,9 @@ class ChunkingPipeline:
         valid = [
             c for c in chunks if c.content.strip() and len(c.content) >= chunker.min_chunk_size
         ]
+        # If size filtering would drop all chunks, keep non-empty ones
+        if not valid:
+            valid = [c for c in chunks if c.content.strip()]
         for i, c in enumerate(valid):
             c.chunk_index = i
 
@@ -861,6 +880,43 @@ class ChunkingPipeline:
             sample.count("{") > 5 and sample.count("}") > 5,
         ]
         return sum(code_signals) >= 2
+
+    async def chunk_semantic(self, text: str, max_chunk_size: int = 1024) -> list[ChunkResult]:
+        chunker = SemanticChunker(max_chunk_size=max_chunk_size)
+        return await chunker.chunk(text)
+
+    async def chunk_by_headings(self, text: str) -> list[ChunkResult]:
+        return await self.strategies["heading"].chunk(text)
+
+    async def chunk_markdown(self, text: str) -> list[ChunkResult]:
+        return await self.strategies["markdown"].chunk(text)
+
+    async def chunk_adaptive(self, text: str, target_chunk_size: int = 1024) -> list[ChunkResult]:
+        chunker = AdaptiveChunker(max_chunk_size=target_chunk_size)
+        chunks = await chunker.chunk(text)
+        if len(chunks) <= 1 and len(text) > target_chunk_size:
+            # Try sentence-level splitting
+            chunks = await SemanticChunker(max_chunk_size=target_chunk_size).chunk(text)
+        if len(chunks) <= 1 and len(text) > target_chunk_size:
+            # Last resort: word-boundary splitting
+            words = text.split()
+            words_per_chunk = max(1, target_chunk_size // 5)
+            chunks = [
+                ChunkResult(
+                    content=" ".join(words[i : i + words_per_chunk]),
+                    chunk_index=idx,
+                    chunk_type="adaptive",
+                )
+                for idx, i in enumerate(range(0, len(words), words_per_chunk))
+                if words[i : i + words_per_chunk]
+            ]
+        return chunks
+
+    async def chunk_parent_child(
+        self, text: str, parent_size: int = 2048, child_size: int = 512
+    ) -> list[ChunkResult]:
+        chunker = ParentChildChunker(parent_chunk_size=parent_size, child_chunk_size=child_size)
+        return await chunker.chunk(text)
 
 
 chunking_pipeline = ChunkingPipeline()

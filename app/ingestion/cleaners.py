@@ -228,8 +228,7 @@ def sanitize_injection_markers(text: str, _meta: dict | None = None) -> str:
     for pattern in _INJECTION_PATTERNS:
 
         def _replace(m: re.Match) -> str:
-            snippet = m.group(0)[:40].replace("]", ")") + ("..." if len(m.group(0)) > 40 else "")
-            return f"[DOCUMENT-CONTENT: {snippet}]"
+            return "[INJECTION-REDACTED]"
 
         text = pattern.sub(_replace, text)
 

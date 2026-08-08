@@ -111,6 +111,7 @@ select = [
 ]
 ignore = [
     "PLR0913", # Too many arguments
+    "PLR0917", # Too many positional arguments — ruff 0.16+ rule, matches PLR0913 intent
     "PLR2004", # Magic value comparison
     "E501",    # Line length (black handles this)
     "SLF001",  # Private member access — evaluation module uses grounding internals

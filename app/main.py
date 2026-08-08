@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.router import router as api_v1_router
@@ -165,7 +165,7 @@ def create_app() -> FastAPI:
             if settings.ENVIRONMENT != "production"
             else None
         ),
-        default_response_class=ORJSONResponse,
+        default_response_class=JSONResponse,
         lifespan=lifespan,
         swagger_ui_parameters={
             "deepLinking": True,
@@ -194,12 +194,10 @@ def create_app() -> FastAPI:
 
     # ── Storage Exception Handlers ────────────
     @app.exception_handler(StorageFileNotFound)
-    async def storage_not_found_handler(
-        request: Request, exc: StorageFileNotFound
-    ) -> ORJSONResponse:
+    async def storage_not_found_handler(request: Request, exc: StorageFileNotFound) -> JSONResponse:
         from fastapi import status
 
-        return ORJSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={
                 "error": {
@@ -212,10 +210,10 @@ def create_app() -> FastAPI:
     @app.exception_handler(StoragePermissionDenied)
     async def storage_permission_handler(
         request: Request, exc: StoragePermissionDenied
-    ) -> ORJSONResponse:
+    ) -> JSONResponse:
         from fastapi import status
 
-        return ORJSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
                 "error": {
@@ -226,10 +224,10 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(StorageQuotaExceeded)
-    async def storage_quota_handler(request: Request, exc: StorageQuotaExceeded) -> ORJSONResponse:
+    async def storage_quota_handler(request: Request, exc: StorageQuotaExceeded) -> JSONResponse:
         from fastapi import status
 
-        return ORJSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_507_INSUFFICIENT_STORAGE,
             content={
                 "error": {
@@ -242,10 +240,10 @@ def create_app() -> FastAPI:
     @app.exception_handler(StorageUnavailable)
     async def storage_unavailable_handler(
         request: Request, exc: StorageUnavailable
-    ) -> ORJSONResponse:
+    ) -> JSONResponse:
         from fastapi import status
 
-        return ORJSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "error": {
@@ -256,10 +254,10 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(StorageError)
-    async def storage_error_handler(request: Request, exc: StorageError) -> ORJSONResponse:
+    async def storage_error_handler(request: Request, exc: StorageError) -> JSONResponse:
         from fastapi import status
 
-        return ORJSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "error": {

@@ -96,6 +96,14 @@ class RAGOrchestrator:
             )
         return self._client
 
+    @client.setter
+    def client(self, value: httpx.AsyncClient | None) -> None:
+        self._client = value
+
+    @client.deleter
+    def client(self) -> None:
+        self._client = None
+
     async def answer(
         self,
         question: str,
